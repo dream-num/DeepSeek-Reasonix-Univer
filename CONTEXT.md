@@ -4,12 +4,12 @@ This context names the concepts used when Reasonix Desktop shows `.univer` conte
 
 ## Language
 
-**Cowork Mode**:
+**Uniwork Mode**:
 A Reasonix Desktop mode optimized for working with Univerfiles while agents and Univer tooling change them. It owns the desktop workflow around Univer work without owning Univer document semantics.
 _Avoid_: Univer app, native Univer editor
 
-**Cowork Orchestration**:
-Reasonix-owned coordination of Univer-facing process state, user-visible status, workspace focus, and agent activity inside Cowork Mode.
+**Uniwork Orchestration**:
+Reasonix-owned coordination of Univer-facing process state, user-visible status, workspace focus, and agent activity inside Uniwork Mode.
 _Avoid_: Univer runtime, document engine
 
 **Univer Semantics**:
@@ -17,147 +17,147 @@ The workbook, document, collaboration, SaC, sync, Trunk, and Worktree behavior d
 _Avoid_: Reasonix workbook model, desktop editor rules
 
 **Univer Capability Package**:
-A versioned Univer-provided package that exposes a stable contract Cowork Mode can consume, such as types, schemas, status models, or embeddable UI entrypoints.
+A versioned Univer-provided package that exposes a stable contract Uniwork Mode can consume, such as types, schemas, status models, or embeddable UI entrypoints.
 _Avoid_: source checkout, repository submodule
 
-**Cowork Package**:
-The single Univer-owned Capability Package, published from the Univer tooling repository, that exposes Cowork Mode's frontend component set while preserving separate lightweight contract entrypoints.
+**Uniwork Package**:
+The single Univer-owned Capability Package, published from the Univer tooling repository, that exposes Uniwork Mode's frontend component set while preserving separate lightweight contract entrypoints.
 _Avoid_: package collection, source bundle
 
-**Cowork Surface**:
-An embedded Univer-aware work surface exported by the Cowork Package for focused document, spreadsheet, or slide interaction inside Cowork Mode. It is one Cowork Component, not the full Reasonix Cowork shell.
+**Uniwork Surface**:
+An embedded Univer-aware work surface exported by the Uniwork Package for focused document, spreadsheet, or slide interaction inside Uniwork Mode. It is one Uniwork Component, not the full Reasonix Uniwork shell.
 _Avoid_: iframe preview, full desktop shell
 
-**Cowork Component**:
-A Univer-aware UI component exported by the Cowork Package for embedding in the Cowork Shell, transcript, sidebar, panel, or focused work area.
+**Uniwork Component**:
+A Univer-aware UI component exported by the Uniwork Package for embedding in the Uniwork Shell, transcript, sidebar, panel, or focused work area.
 _Avoid_: standalone app, host shell component
 
-**Cowork Headless Primitive**:
-A non-visual hook, state helper, or behavior primitive exported by the Cowork Package so hosts can build their own Cowork UI while reusing Univer-aware logic.
+**Uniwork Headless Primitive**:
+A non-visual hook, state helper, or behavior primitive exported by the Uniwork Package so hosts can build their own Uniwork UI while reusing Univer-aware logic.
 _Avoid_: fixed UI component, Reasonix-specific widget
 
-**Cowork Shell**:
-The Reasonix-owned transcript-first desktop layout around Cowork Components, including mode chrome, workspace focus, agent transcript, process status, commands, and recovery UI.
+**Uniwork Shell**:
+The Reasonix-owned transcript-first desktop layout around Uniwork Components, including mode chrome, workspace focus, agent transcript, process status, commands, and recovery UI.
 _Avoid_: Univer work surface, embedded editor
 
 **Workspace Activity**:
-A workspace-level Reasonix product mode selected by the user, such as Code or Cowork. It controls which layout new sessions use without being a global appearance setting.
+A workspace-level Reasonix product mode selected by the user, such as Code or Uniwork. It controls which layout new sessions use without being a global appearance setting.
 _Avoid_: desktop theme, global layout style
 
 **Code Activity**:
 The existing Reasonix coding-agent workspace activity.
 _Avoid_: chat mode, default activity
 
-**Cowork Activity**:
-The workspace activity that opens the Cowork Shell and makes new sessions default to Cowork Sessions.
-_Avoid_: global Cowork setting, Univer app
+**Uniwork Activity**:
+The workspace activity that opens the Uniwork Shell and makes new sessions default to Uniwork Sessions.
+_Avoid_: global Uniwork setting, Univer app
 
-**Cowork Activity Switch**:
-The user-facing workspace control that switches between Code Activity and Cowork Activity.
+**Uniwork Activity Switch**:
+The user-facing workspace control that switches between Code Activity and Uniwork Activity.
 _Avoid_: automatic mode jump, session type prompt
 
-**Cowork Entry**:
-A user-facing route from Code Activity or workspace navigation into Cowork Activity for a Univerfile.
+**Uniwork Entry**:
+A user-facing route from Code Activity or workspace navigation into Uniwork Activity for a Univerfile.
 _Avoid_: Code preview, inline spreadsheet viewer
 
-**Cowork Session**:
-A Reasonix session whose persisted kind restores the Cowork Shell when opened from recents or tabs.
+**Uniwork Session**:
+A Reasonix session whose persisted kind restores the Uniwork Shell when opened from recents or tabs.
 _Avoid_: normal code session, temporary preview
 
-**Cowork Block**:
-A serializable transcript block that records a Cowork target, worktree, preview, command result, or related Univer-aware state for later rendering.
+**Uniwork Block**:
+A serializable transcript block that records a Uniwork target, worktree, preview, command result, or related Univer-aware state for later rendering.
 _Avoid_: React component state, ad hoc markdown
 
-**Authoritative Cowork Block**:
-A Cowork Block created by the host from real Univer tooling, daemon, target, or worktree state.
+**Authoritative Uniwork Block**:
+A Uniwork Block created by the host from real Univer tooling, daemon, target, or worktree state.
 _Avoid_: model-authored UI state, speculative block
 
-**Cowork Worktree UX**:
-The Cowork UI flow for showing Collab Gateway worktree status, opening trunk or worktree scope, showing merge preview/conflict state, and requesting merge or discard while agents change Univerfiles. It is grounded in `@univer/collab-gateway-contract`, not Git worktree semantics.
+**Uniwork Worktree UX**:
+The Uniwork UI flow for showing Collab Gateway worktree status, opening trunk or worktree scope, showing merge preview/conflict state, and requesting merge or discard while agents change Univerfiles. It is grounded in `@univer/collab-gateway-contract`, not Git worktree semantics.
 _Avoid_: placeholder worktree card, Git worktree
 
 **Worktree Operation**:
-A Univer-owned Collab Gateway control-plane action such as `createWorktree`, `commit`, `rollback`, `ready`, `merge`, `discard`, `previewMerge`, or `getMergePreviewUnit`. Cowork UI labels like accept must map to these concrete operations, with accept mapping to `merge`.
+A Univer-owned Collab Gateway control-plane action such as `createWorktree`, `commit`, `rollback`, `ready`, `merge`, `discard`, `previewMerge`, or `getMergePreviewUnit`. Uniwork UI labels like accept must map to these concrete operations, with accept mapping to `merge`.
 _Avoid_: frontend merge, Reasonix document mutation, Git operation
 
 **Gateway Worktree State**:
 The Collab Gateway state for a worktree, including `worktreeId`, `status`, `baseline`, `headCommit`, agent metadata, current unit summaries, merge preview, and conflicts.
 _Avoid_: Git branch graph, UI-only history, Reasonix-only lifecycle
 
-**Cowork Tooling Protocol**:
-The shared executable, daemon, and package-facing protocol that exposes Cowork Protocol Version, gateway endpoint health, unit refs, target scopes, lifecycle events, and Collab Gateway worktree operations to host applications.
+**Uniwork Tooling Protocol**:
+The shared executable, daemon, and package-facing protocol that exposes Uniwork Protocol Version, gateway endpoint health, unit refs, target scopes, lifecycle events, and Collab Gateway worktree operations to host applications.
 _Avoid_: CLI text scraping, iframe URL contract
 
-**Cowork Mount API**:
-A lower-level browser entrypoint from the Cowork Package that mounts the Cowork Surface outside a React component tree.
+**Uniwork Mount API**:
+A lower-level browser entrypoint from the Uniwork Package that mounts the Uniwork Surface outside a React component tree.
 _Avoid_: separate product app, daemon API
 
-**Cowork Host Adapter**:
-A host-provided implementation of the Cowork Package orchestration contract. It maps Cowork Surface requests and events to the embedding agent app's workspace, permissions, daemon, bridge, or backend.
+**Uniwork Host Adapter**:
+A host-provided implementation of the Uniwork Package orchestration contract. It maps Uniwork Surface requests and events to the embedding agent app's workspace, permissions, daemon, bridge, or backend.
 _Avoid_: Reasonix bridge, Wails adapter
 
-**Reasonix Cowork Host Adapter**:
-The Reasonix Desktop implementation of the Cowork Host Adapter contract, kept inside the Reasonix repository and wired to the Wails bridge and Go orchestration.
+**Reasonix Uniwork Host Adapter**:
+The Reasonix Desktop implementation of the Uniwork Host Adapter contract, kept inside the Reasonix repository and wired to the Wails bridge and Go orchestration.
 _Avoid_: shared Univer package, published adapter
 
 **Univer Tooling Discovery**:
-The host-owned process of finding, configuring, and checking the local Univer executable or daemon used for Cowork orchestration.
+The host-owned process of finding, configuring, and checking the local Univer executable or daemon used for Uniwork orchestration.
 _Avoid_: bundled runtime, automatic installer
 
 **Univer Tooling Session**:
-A workspace-scoped host-managed session or process pool for Univer executable, daemon, gateway, and related Cowork orchestration.
+A workspace-scoped host-managed session or process pool for Univer executable, daemon, gateway, and related Uniwork orchestration.
 _Avoid_: per-target sidecar, global always-on service
 
-**Cowork Result Block**:
-An Authoritative Cowork Block that records a user-relevant outcome such as target opened, Worktree ready, merge completed, discard completed, conflict found, or verification failed.
+**Uniwork Result Block**:
+An Authoritative Uniwork Block that records a user-relevant outcome such as target opened, Worktree ready, merge completed, discard completed, conflict found, or verification failed.
 _Avoid_: daemon log entry, process heartbeat
 
 **Gateway Endpoint**:
-The Univer-owned realtime endpoint the Cowork Surface connects to for document rendering and collaboration traffic.
+The Univer-owned realtime endpoint the Uniwork Surface connects to for document rendering and collaboration traffic.
 _Avoid_: host bridge, desktop proxy
 
-**Cowork Target**:
-The host-provided object that identifies the Univerfile and current Cowork context shown by a Cowork Surface, including host-defined display or source path, display identity, view selection, gateway endpoint, health, and supported host capabilities.
+**Uniwork Target**:
+The host-provided object that identifies the Univerfile and current Uniwork context shown by a Uniwork Surface, including host-defined display or source path, display identity, view selection, gateway endpoint, health, and supported host capabilities.
 _Avoid_: iframe URL, package-owned file handle
 
-**Cowork View Ref**:
-A host or Univer tooling supplied render scope for a Cowork Target, such as trunk, a Collab Gateway worktree, or a merge preview for a selected unit.
+**Uniwork View Ref**:
+A host or Univer tooling supplied render scope for a Uniwork Target, such as trunk, a Collab Gateway worktree, or a merge preview for a selected unit.
 _Avoid_: separate viewer, fixed worktree alias, storage ref id
 
-**Cowork View Ref Model**:
-The public Cowork contract for selecting renderable target states, aligned with Collab Gateway runtime configuration and worktree scope while hiding gateway URL construction details.
+**Uniwork View Ref Model**:
+The public Uniwork contract for selecting renderable target states, aligned with Collab Gateway runtime configuration and worktree scope while hiding gateway URL construction details.
 _Avoid_: WorkbookViewReadService API, storage ref internals, raw `/uf` URL persistence
 
-**Cowork Unit Ref**:
-A Cowork contract reference to a renderable unit inside a Cowork Target, including its type such as sheet, doc, slide, or base.
+**Uniwork Unit Ref**:
+A Uniwork contract reference to a renderable unit inside a Uniwork Target, including its type such as sheet, doc, slide, or base.
 _Avoid_: spreadsheet-only target, implicit active unit
 
 **Host-Defined Path**:
-A path-like Cowork Target string supplied by the host for display, intent round-trips, or source identity. The Cowork Package does not interpret it or use it for local IO.
+A path-like Uniwork Target string supplied by the host for display, intent round-trips, or source identity. The Uniwork Package does not interpret it or use it for local IO.
 _Avoid_: package absolute path, filesystem authority
 
-**Cowork Color Scheme**:
-The host-provided light or dark appearance mode consumed by the Cowork Surface.
+**Uniwork Color Scheme**:
+The host-provided light or dark appearance mode consumed by the Uniwork Surface.
 _Avoid_: full theme token set, Reasonix theme style
 
-**Cowork Intent**:
-A typed request emitted by the Cowork Surface for the host to consider, such as changing target, retrying a capability, opening a unit, syncing, or verifying.
+**Uniwork Intent**:
+A typed request emitted by the Uniwork Surface for the host to consider, such as changing target, retrying a capability, opening a unit, syncing, or verifying.
 _Avoid_: shell command string, direct mutation, host state update
 
-**Cowork Approval**:
-A Reasonix permission or approval prompt presented in Cowork terms for a Cowork Intent.
+**Uniwork Approval**:
+A Reasonix permission or approval prompt presented in Uniwork terms for a Uniwork Intent.
 _Avoid_: raw command approval, separate approval system
 
-**Cowork Capability**:
-A host-reported ability available to the Cowork Surface for a target or host environment.
+**Uniwork Capability**:
+A host-reported ability available to the Uniwork Surface for a target or host environment.
 _Avoid_: frontend probe, implicit CLI support
 
-**Cowork Protocol Version**:
-The explicit compatibility version used by the Cowork Package, host adapter, and Univer executable or daemon contracts.
+**Uniwork Protocol Version**:
+The explicit compatibility version used by the Uniwork Package, host adapter, and Univer executable or daemon contracts.
 _Avoid_: package version, best-effort parsing
 
-**Cowork Incompatibility**:
-A typed failure that reports unsupported or mismatched Cowork Protocol Version, intent catalog, or capability contract between the Cowork Package, host, and Univer tooling.
+**Uniwork Incompatibility**:
+A typed failure that reports unsupported or mismatched Uniwork Protocol Version, intent catalog, or capability contract between the Uniwork Package, host, and Univer tooling.
 _Avoid_: generic error, silent fallback
 
 **Univerfile**:
@@ -189,7 +189,7 @@ Reasonix Desktop embeds the Collab Client as provided by Univer tooling and does
 _Avoid_: Reasonix-owned editor behavior, desktop editing mode
 
 **Live Univer Preview**:
-The V1 Reasonix Desktop surface where a user watches a Univerfile update after the agent changes it through Univer tooling. Cowork supersedes it as the primary Univerfile workbench.
+The V1 Reasonix Desktop surface where a user watches a Univerfile update after the agent changes it through Univer tooling. Uniwork supersedes it as the primary Univerfile workbench.
 _Avoid_: file preview, static preview
 
 **Preview Target**:
