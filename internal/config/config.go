@@ -1210,6 +1210,10 @@ is changed; once approved, work through the steps, updating the task list as you
 // prompts, so custom personas cannot accidentally remove the `ask` UI contract.
 const UserDecisionPolicy = `User-owned choices: when a real decision belongs to the user — scope, approach, library, risk, manual validation, or any ambiguous or consequential path — and there is no obvious safe default, call the ask tool with 2-4 concrete options so the UI shows a choice. Do not ask in prose, infer a choice from silence, or continue by choosing for the user; do not choose for the user. Tool-approval bypass modes do not answer ask questions or approve plans. If no interactive user is available, the ask tool returns a model-assumption fallback; state that assumption and choose the safest reversible path.`
 
+// UniverTargetPolicy is appended to every system prompt so custom prompts cannot
+// accidentally route .univer authoring through generic code exploration.
+const UniverTargetPolicy = `Univerfile targets: when the user's task names or implies a .univer file, workbook, spreadsheet, sheet, or SaC operation, first use the installed Univer/univer-cli skill when available and operate through public univer CLI/SaC surfaces such as status, inspect, sac materialize, sac migration create, sac apply, and sac verify. Do not treat a .univer target as a source-code directory or binary blob, do not hand-patch it, and do not delegate to generic exploration before checking the relevant Univer skill and CLI workflow.`
+
 // LanguagePolicy is the auto fallback appended to the system prompt when no
 // concrete UI language is resolved. It is static English text, so it stays part
 // of the cache-stable prefix and avoids per-turn language injection.

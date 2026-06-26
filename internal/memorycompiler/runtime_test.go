@@ -156,6 +156,36 @@ func TestSuccessTraceFeedsReusableStrategyAndGraph(t *testing.T) {
 	assertEdge(t, st.Edges, "derived_from")
 }
 
+func TestStrategyPreconditionsUseWordBoundaries(t *testing.T) {
+	lower := strings.ToLower("open reasonix-live-preview-demo.univer")
+	if preconditionMatches(lower, "review") {
+		t.Fatal("preview should not match review")
+	}
+	if preconditionMatches(lower, "pr") {
+		t.Fatal("preview should not match pr")
+	}
+	if !preconditionMatches(lower, ".univer") {
+		t.Fatal(".univer marker should match workbook paths")
+	}
+	if !preconditionMatches(strings.ToLower("review PR diff"), "pr") {
+		t.Fatal("standalone PR token should match code review precondition")
+	}
+}
+
+func TestUniverWorkflowStrategyBeatsPreviewCodeReviewSubstring(t *testing.T) {
+	goal := "帮我在 @reasonix-live-preview-demo.univer 中增加一个新的 sheet，放几个新的行"
+
+	ranked := rankStrategies(goal, ensureBuiltInStrategies(nil))
+	pick := selectStrategy(goal, ranked, 0)
+
+	if pick.Selected != "univer-sac-workflow" {
+		t.Fatalf("selected strategy = %+v, want univer-sac-workflow", pick)
+	}
+	if strings.Contains(pick.Reason, "matched precondition review") || strings.Contains(pick.Reason, "matched precondition pr") {
+		t.Fatalf("strategy reason should not inherit preview substring matches: %+v", pick)
+	}
+}
+
 func TestGraphTraversalFiltersCorruptedMemoryAndExpandsConnectedNodes(t *testing.T) {
 	now := time.Now().UTC()
 	st := state{

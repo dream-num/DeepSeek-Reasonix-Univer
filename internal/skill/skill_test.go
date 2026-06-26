@@ -83,6 +83,38 @@ func TestFlatAndDirLayout(t *testing.T) {
 	}
 }
 
+func TestHomeAgentsSkillsDiscovered(t *testing.T) {
+	home := t.TempDir()
+	writeSkill(t, home, ".agents/skills/univer-cli/SKILL.md", "---\ndescription: Univer CLI\n---\nUse SaC")
+
+	st := New(Options{HomeDir: home, DisableBuiltins: true})
+	list := st.List()
+
+	sk, ok := find(list, "univer-cli")
+	if !ok {
+		t.Fatalf("home .agents skill not discovered: %+v", list)
+	}
+	if sk.Scope != ScopeGlobal || sk.Description != "Univer CLI" {
+		t.Fatalf("home .agents skill = %+v, want global Univer CLI skill", sk)
+	}
+}
+
+func TestProjectAgentsSkillsDiscovered(t *testing.T) {
+	project := t.TempDir()
+	writeSkill(t, project, ".agents/skills/univer-cli/SKILL.md", "---\ndescription: Univer CLI\n---\nUse SaC")
+
+	st := New(Options{ProjectRoot: project, DisableBuiltins: true})
+	list := st.List()
+
+	sk, ok := find(list, "univer-cli")
+	if !ok {
+		t.Fatalf("project .agents skill not discovered: %+v", list)
+	}
+	if sk.Scope != ScopeProject || sk.Description != "Univer CLI" {
+		t.Fatalf("project .agents skill = %+v, want project Univer CLI skill", sk)
+	}
+}
+
 func TestNestedSkillsDiscoveredByDefault(t *testing.T) {
 	home := t.TempDir()
 	writeSkill(t, home, ".reasonix/skills/superpower/skill-a.md", "---\ndescription: nested flat\n---\nflat body")
