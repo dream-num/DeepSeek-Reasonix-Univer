@@ -437,10 +437,10 @@ function buildUniworkDemoProjectTree(t: Translator, now: number, running: boolea
           running,
           status: running ? "streaming" : undefined,
         }),
-        uniworkDemoTopic("uniwork_topic_budget_variance", t("mock.uniworkTopicBudgetVariance"), "~/office/finance-suite", "green", 9, now - 2 * 60 * 60_000, {
+        uniworkDemoTopic("uniwork_topic_budget_variance", t("mock.uniworkTopicBudgetVariance"), "~/office/finance-suite", "green", 11, now - 2 * 60 * 60_000, {
           status: running ? "thinking" : undefined,
         }),
-        uniworkDemoTopic("uniwork_topic_sales_forecast", t("mock.uniworkTopicSalesForecast"), "~/office/finance-suite", "green", 6, now - 25 * 60 * 60_000),
+        uniworkDemoTopic("uniwork_topic_sales_forecast", t("mock.uniworkTopicSalesForecast"), "~/office/finance-suite", "green", 11, now - 25 * 60 * 60_000),
       ],
     },
     {
@@ -451,10 +451,10 @@ function buildUniworkDemoProjectTree(t: Translator, now: number, running: boolea
       projectColor: "amber",
       children: [
         uniworkDemoTopic("uniwork_topic_contract_register", t("mock.uniworkTopicContractRegister"), "~/office/operations", "amber", 12, now - 3 * 24 * 60 * 60_000),
-        uniworkDemoTopic("uniwork_topic_okr_weekly", t("mock.uniworkTopicOkrWeekly"), "~/office/operations", "amber", 7, now - 4 * 24 * 60 * 60_000, {
+        uniworkDemoTopic("uniwork_topic_okr_weekly", t("mock.uniworkTopicOkrWeekly"), "~/office/operations", "amber", 11, now - 4 * 24 * 60 * 60_000, {
           status: "waiting_confirmation",
         }),
-        uniworkDemoTopic("uniwork_topic_review_packets", t("mock.uniworkTopicReviewPackets"), "~/office/operations", "amber", 5, now - 5 * 24 * 60 * 60_000, {
+        uniworkDemoTopic("uniwork_topic_review_packets", t("mock.uniworkTopicReviewPackets"), "~/office/operations", "amber", 11, now - 5 * 24 * 60 * 60_000, {
           status: "paused",
         }),
       ],
@@ -467,10 +467,10 @@ function buildUniworkDemoProjectTree(t: Translator, now: number, running: boolea
       projectColor: "blue",
       children: [
         uniworkDemoTopic("uniwork_topic_cli_import", t("mock.uniworkTopicCliImport"), "~/tools/univer-cli", "blue", 10, now - 6 * 24 * 60 * 60_000),
-        uniworkDemoTopic("uniwork_topic_cli_merge_preview", t("mock.uniworkTopicCliMergePreview"), "~/tools/univer-cli", "blue", 8, now - 7 * 24 * 60 * 60_000, {
+        uniworkDemoTopic("uniwork_topic_cli_merge_preview", t("mock.uniworkTopicCliMergePreview"), "~/tools/univer-cli", "blue", 11, now - 7 * 24 * 60 * 60_000, {
           status: "background_job",
         }),
-        uniworkDemoTopic("uniwork_topic_cli_sidecar", t("mock.uniworkTopicCliSidecar"), "~/tools/univer-cli", "blue", 4, now - 8 * 24 * 60 * 60_000, {
+        uniworkDemoTopic("uniwork_topic_cli_sidecar", t("mock.uniworkTopicCliSidecar"), "~/tools/univer-cli", "blue", 11, now - 8 * 24 * 60 * 60_000, {
           status: "error",
         }),
       ],
@@ -486,7 +486,7 @@ function buildUniworkDemoProjectTree(t: Translator, now: number, running: boolea
           kind: "global_topic",
           label: t("mock.uniworkTopicOfficeAutomation"),
           topicId: "uniwork_global_office_automation",
-          turns: 5,
+          turns: 11,
           lastActivityAt: now - 9 * 24 * 60 * 60_000,
         },
         {
@@ -494,7 +494,7 @@ function buildUniworkDemoProjectTree(t: Translator, now: number, running: boolea
           kind: "global_topic",
           label: t("mock.uniworkTopicCliRecipes"),
           topicId: "uniwork_global_cli_recipes",
-          turns: 6,
+          turns: 11,
           lastActivityAt: now - 11 * 24 * 60 * 60_000,
         },
       ],

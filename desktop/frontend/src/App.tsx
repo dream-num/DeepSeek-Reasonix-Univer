@@ -39,7 +39,7 @@ import { generativeMusic, isGenerativeMusicEnabled } from "./lib/generative-musi
 import { inferUniverPreviewSignal } from "./lib/univerPreviewSignal";
 import { playSuccessChime } from "./lib/sound";
 import { Transcript } from "./components/Transcript";
-import { UniworkTranscript } from "./components/UniworkTranscript";
+import { UniworkTranscript, hasUniworkMockScenario } from "./components/UniworkTranscript";
 import { Composer } from "./components/Composer";
 import { UniworkComposer } from "./components/UniworkComposer";
 import { TodoPanel } from "./components/TodoPanel";
@@ -2843,12 +2843,19 @@ export default function App() {
       actionPending={state.messageAction != null}
       rewindDisabled={Boolean(activeTab?.readOnly) || !controllerReady || hydratePlaceholderActive || rewindState != null || rewindCommitting || state.running || state.messageAction != null || state.approval != null || state.ask != null || clearContextPending}
       running={state.running || rewindCommitting}
-      welcomeVariant="default"
       actionHoverMenus={!hydratePlaceholderActive}
       rewindSignal={rewindSignal}
       revealSignal={transcriptRevealSignal}
       hydrating={transcriptHydrating}
+      mockTopicId={activeTab?.topicId}
     />
+  );
+  const uniworkActionsRailVisible = !sidebarImDetailConnection && (
+    displayItems.length > 0 ||
+    transcriptHydrating ||
+    state.running ||
+    rewindCommitting ||
+    hasUniworkMockScenario(activeTab?.topicId)
   );
   const projectTreeSection = (
     <section className="sidebar__section sidebar__section--projects">
@@ -3209,6 +3216,7 @@ export default function App() {
         <section className={`chat-pane${sidebarCreation && !sessionHasContent ? " chat-pane--creation-empty" : ""}${uniworkActive ? " chat-pane--uniwork" : ""}`}>
           {uniworkActive ? (
             <UniworkMode
+              actionsRailVisible={uniworkActionsRailVisible}
               transcriptSlot={uniworkTranscript}
               composerSlot={uniworkFooter}
             />

@@ -18,6 +18,7 @@ const uniworkComposerSource = readFileSync(resolve(testDir, "../components/Uniwo
 const uniworkTranscriptSource = readFileSync(resolve(testDir, "../components/UniworkTranscript.tsx"), "utf8");
 const uniworkProjectTreeSource = readFileSync(resolve(testDir, "../components/UniworkProjectTree.tsx"), "utf8");
 const zhLocaleSource = readFileSync(resolve(testDir, "../locales/zh.ts"), "utf8");
+const uniworkMockUserTurnCount = (uniworkTranscriptSource.match(/user\(`uniwork-mock-\$\{topicKey\}-u\d+/g) ?? []).length;
 
 let passed = 0;
 let failed = 0;
@@ -53,6 +54,8 @@ function installDom() {
   globalThis.HTMLElement = dom.window.HTMLElement;
   globalThis.Event = dom.window.Event;
   globalThis.MouseEvent = dom.window.MouseEvent;
+  globalThis.requestAnimationFrame = dom.window.requestAnimationFrame.bind(dom.window);
+  globalThis.cancelAnimationFrame = dom.window.cancelAnimationFrame.bind(dom.window);
   return dom;
 }
 
@@ -103,7 +106,7 @@ console.log("\nuniwork mode ui");
   );
   ok(
     /import \{ UniworkComposer \} from "\.\/components\/UniworkComposer";/.test(appSource) &&
-      /import \{ UniworkTranscript \} from "\.\/components\/UniworkTranscript";/.test(appSource) &&
+      /import \{[^}]*UniworkTranscript[^}]*\} from "\.\/components\/UniworkTranscript";/.test(appSource) &&
       /<UniworkComposer\b/.test(appSource) &&
       /<UniworkTranscript\b/.test(appSource) &&
       /<Composer\b/.test(appSource) &&
@@ -140,8 +143,37 @@ console.log("\nuniwork mode ui");
   ok(
     /export function UniworkTranscript\(/.test(uniworkTranscriptSource) &&
       !/export function Transcript\(/.test(uniworkTranscriptSource) &&
-      /fork of the Code Transcript/.test(uniworkTranscriptSource),
-    "UniworkTranscript is forked from the Code transcript for independent evolution",
+      /fork of the Code Transcript/.test(uniworkTranscriptSource) &&
+      /function buildUniworkMockTranscript/.test(uniworkTranscriptSource) &&
+      /const UNIWORK_MOCK_SCENARIOS/.test(uniworkTranscriptSource) &&
+      /uniwork_topic_budget_variance/.test(uniworkTranscriptSource) &&
+      /uniwork_topic_cli_import/.test(uniworkTranscriptSource) &&
+      /mockTopicId=\{activeTab\?\.topicId\}/.test(appSource) &&
+      /items: sourceItems/.test(uniworkTranscriptSource) &&
+      /function hasUniworkMockScenario/.test(uniworkTranscriptSource) &&
+      /sourceItems\.length === 0 && !hydrating && !running && hasUniworkMockScenario\(mockTopicId\)/.test(uniworkTranscriptSource) &&
+      /const showWelcome = empty && !hydrating;/.test(uniworkTranscriptSource) &&
+      /<UniworkWelcome onPrompt=\{onPrompt\} \/>/.test(uniworkTranscriptSource) &&
+      uniworkMockUserTurnCount >= 10 &&
+      /commonCloseRequest/.test(uniworkTranscriptSource) &&
+      /uniwork\.mockTranscript\.monthly\.user/.test(uniworkTranscriptSource) &&
+      /uniwork\.mockTranscript\.import\.user/.test(uniworkTranscriptSource) &&
+      /"uniwork\.mockTranscript\.commonOwnerRequest": "每个下一步分别谁负责？"/.test(zhLocaleSource) &&
+      /"uniwork\.welcome\.title": "你的 Office 工作流 Agent"/.test(zhLocaleSource) &&
+      /"uniwork\.mockTranscript\.budget\.user": "把预算差异表里的大额偏差/.test(zhLocaleSource) &&
+      /"uniwork\.mockTranscript\.import\.user": "用 Univer CLI/.test(zhLocaleSource) &&
+      !/<Welcome\b/.test(uniworkTranscriptSource),
+    "UniworkTranscript is forked from the Code transcript with long topic-specific mock conversations",
+  );
+  ok(
+    /\.uniwork-welcome\s*\{(?![^}]*grid-template-columns:)(?![^}]*border-bottom:)[^}]*justify-items:\s*center;[^}]*width:\s*min\(100%, 560px\);[^}]*text-align:\s*center;/s.test(cssSource) &&
+      /\.transcript--empty > \.uniwork-welcome\s*\{[^}]*margin-block:\s*auto;/s.test(cssSource) &&
+      /\.uniwork-welcome__eyebrow\s*\{[^}]*font-size:\s*24px;[^}]*font-weight:\s*720;/s.test(cssSource) &&
+      !/uniwork-welcome__mark/.test(cssSource) &&
+      !/uniwork-welcome__mark/.test(uniworkTranscriptSource) &&
+      /\.uniwork-welcome__title\s*\{[^}]*font-size:\s*25px;[^}]*letter-spacing:\s*0;/s.test(cssSource) &&
+      /\.uniwork-welcome__prompt\s*\{[^}]*min-height:\s*34px;[^}]*border-radius:\s*8px;/s.test(cssSource),
+    "UniworkTranscript renders a centered compact Uniwork-specific empty welcome",
   );
   ok(
     /const \[activeQuestionTurn, setActiveQuestionTurn\] = useState<number \| null>\(null\);/.test(uniworkTranscriptSource) &&
@@ -160,6 +192,9 @@ console.log("\nuniwork mode ui");
   );
   ok(
     /transcriptSlot/.test(uniworkModeSource) &&
+      /actionsRailVisible/.test(uniworkModeSource) &&
+      /actionsRailVisible=\{uniworkActionsRailVisible\}/.test(appSource) &&
+      /hasUniworkMockScenario\(activeTab\?\.topicId\)/.test(appSource) &&
       /uniwork-body/.test(uniworkModeSource) &&
       /uniwork-transcript-pane/.test(uniworkModeSource) &&
       /uniwork-actions-rail/.test(uniworkModeSource) &&
@@ -169,15 +204,18 @@ console.log("\nuniwork mode ui");
       /t\("uniwork\.sidebar\.newTask"\)/.test(uniworkModeSource) &&
       uniworkModeSource.includes("\"uniwork.activitySwitcher.uniwork\"") &&
       /\.uniwork-shell\s*\{[^}]*--uniwork-actions-rail-width:\s*320px;(?![^}]*--uniwork-composer-text-inset)/s.test(cssSource) &&
-      /\.uniwork-body\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) var\(--uniwork-actions-rail-width\);[^}]*gap:\s*0;(?![^}]*padding:)/s.test(cssSource) &&
+      /\.uniwork-body\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) var\(--uniwork-actions-rail-width\);[^}]*gap:\s*0;[^}]*transition:\s*grid-template-columns/s.test(cssSource) &&
+      /\.uniwork-body--actions-hidden\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) 0px;/s.test(cssSource) &&
       /\.uniwork-transcript-pane\s*\{(?![^}]*padding-left:)[^}]*overflow:\s*hidden;/s.test(cssSource) &&
-      /\.uniwork-transcript-pane \.transcript\s*\{[^}]*padding-left:\s*60px;[^}]*scrollbar-gutter:\s*auto;[^}]*scrollbar-width:\s*none;/s.test(cssSource) &&
+      /\.uniwork-transcript-pane \.transcript-shell\s*\{[^}]*width:\s*100%;[^}]*min-width:\s*0;[^}]*max-width:\s*100%;/s.test(cssSource) &&
+      /\.uniwork-transcript-pane \.transcript\s*\{[^}]*box-sizing:\s*border-box;[^}]*width:\s*100%;[^}]*padding-left:\s*60px;[^}]*padding-right:\s*24px;[^}]*scrollbar-gutter:\s*auto;[^}]*scrollbar-width:\s*none;/s.test(cssSource) &&
       /\.uniwork-transcript-pane \.transcript::\-webkit-scrollbar\s*\{[^}]*display:\s*none;/s.test(cssSource) &&
-      /\.uniwork-transcript-pane \.transcript > \*\s*\{(?![^}]*width:\s*100%)[^}]*max-width:\s*none;[^}]*margin-right:\s*0;/s.test(cssSource) &&
-      /\.uniwork-transcript-pane \.warm-turn__body > \*,\s*\.uniwork-transcript-pane \.readonly-batch__body > \*,\s*\.uniwork-transcript-pane \.turn-collapse__body > \*\s*\{[^}]*max-width:\s*none;[^}]*margin-left:\s*0;[^}]*margin-right:\s*0;/s.test(cssSource) &&
-      /:root\[data-theme-style\] \.app--uniwork \.uniwork-transcript-pane \.transcript\s*\{[^}]*padding-left:\s*60px;[^}]*scrollbar-gutter:\s*auto;[^}]*scrollbar-width:\s*none;/s.test(cssSource) &&
-      /\.uniwork-actions-rail\s*\{(?![^}]*border-left:)[^}]*background:\s*color-mix\(in srgb, var\(--uniwork-canvas\) 86%, var\(--bg-soft\)\);/s.test(cssSource),
-    "UniworkMode hosts the transcript and a fixed empty action rail with text aligned to the composer input",
+      /\.uniwork-transcript-pane \.transcript > \*\s*\{[^}]*box-sizing:\s*border-box;[^}]*width:\s*100%;[^}]*min-width:\s*0;[^}]*max-width:\s*none;[^}]*margin-right:\s*0;/s.test(cssSource) &&
+      /\.uniwork-transcript-pane \.warm-turn__body > \*,\s*\.uniwork-transcript-pane \.readonly-batch__body > \*,\s*\.uniwork-transcript-pane \.turn-collapse__body > \*\s*\{[^}]*box-sizing:\s*border-box;[^}]*min-width:\s*0;[^}]*max-width:\s*none;[^}]*margin-left:\s*0;[^}]*margin-right:\s*0;/s.test(cssSource) &&
+      /:root\[data-theme-style\] \.app--uniwork \.uniwork-transcript-pane \.transcript\s*\{[^}]*padding-left:\s*60px;[^}]*padding-right:\s*24px;[^}]*scrollbar-gutter:\s*auto;[^}]*scrollbar-width:\s*none;/s.test(cssSource) &&
+      /\.uniwork-actions-rail\s*\{(?![^}]*border-left:)[^}]*background:\s*color-mix\(in srgb, var\(--uniwork-canvas\) 86%, var\(--bg-soft\)\);[^}]*transition:/s.test(cssSource) &&
+      /\.uniwork-body--actions-hidden \.uniwork-actions-rail\s*\{[^}]*opacity:\s*0;[^}]*pointer-events:\s*none;[^}]*transform:\s*translateX\(16px\);/s.test(cssSource),
+    "UniworkMode hosts the transcript and only reveals the action rail for non-empty work",
   );
   ok(
     /\.uniwork-actions-rail__skeleton\s*\{[^}]*gap:\s*12px;[^}]*pointer-events:\s*none;/s.test(cssSource) &&

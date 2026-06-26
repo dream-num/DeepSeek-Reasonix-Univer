@@ -1,12 +1,11 @@
 import { createContext, memo, type CSSProperties, type MouseEvent as ReactMouseEvent, type ReactNode, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Item, LiveStream } from "../lib/useController";
 import type { CheckpointMeta } from "../lib/types";
-import { useT } from "../lib/i18n";
+import { useT, type DictKey, type Translator } from "../lib/i18n";
 import { AssistantMessage, TurnActions, UserMessage } from "./Message";
 import { ProcessCompactIcon, ProcessPhaseIcon } from "./ProcessCard";
 import { ToolCard } from "./ToolCard";
-import { ArrowDown, ChevronRight } from "lucide-react";
-import { Welcome } from "./Welcome";
+import { ArrowDown, ChevronRight, FileSpreadsheet, FileCheck2, ListChecks } from "lucide-react";
 import { ReadOnlyBatch } from "./ReadOnlyBatch";
 import { ToolGroup, isCreationGroupableTool, toolGroupKind, type ToolGroupKind } from "./ToolGroup";
 import { getDisplayMode, onDisplayModeChange, type DisplayMode } from "../lib/displayMode";
@@ -77,8 +76,275 @@ const WARM_PAGE_SIZE = 20; // cold-zone pagination batch
 // UniworkTranscript starts as a fork of the Code Transcript so Uniwork can evolve
 // its message structure independently without changing Code mode behavior.
 
+type UniworkMockScenario = {
+  topicLabel: DictKey;
+  user: DictKey;
+  toolName: string;
+  toolArgs: Record<string, string>;
+  toolSummary: DictKey;
+  toolOutput: DictKey;
+  outcome: DictKey;
+  actions: DictKey;
+};
+
+const DEFAULT_UNIWORK_MOCK_TOPIC = "uniwork_topic_monthly_report";
+
+const UNIWORK_MOCK_SCENARIOS: Record<string, UniworkMockScenario> = {
+  uniwork_topic_monthly_report: {
+    topicLabel: "mock.uniworkTopicMonthlyReport",
+    user: "uniwork.mockTranscript.monthly.user",
+    toolName: "univer inspect",
+    toolArgs: { file: "~/office/finance-suite/june-ops.univer", view: "overview" },
+    toolSummary: "uniwork.mockTranscript.monthly.toolSummary",
+    toolOutput: "uniwork.mockTranscript.monthly.toolOutput",
+    outcome: "uniwork.mockTranscript.monthly.outcome",
+    actions: "uniwork.mockTranscript.monthly.actions",
+  },
+  uniwork_topic_budget_variance: {
+    topicLabel: "mock.uniworkTopicBudgetVariance",
+    user: "uniwork.mockTranscript.budget.user",
+    toolName: "univer comments",
+    toolArgs: { file: "~/office/finance-suite/budget-variance.univer", region: "variance-comments" },
+    toolSummary: "uniwork.mockTranscript.budget.toolSummary",
+    toolOutput: "uniwork.mockTranscript.budget.toolOutput",
+    outcome: "uniwork.mockTranscript.budget.outcome",
+    actions: "uniwork.mockTranscript.budget.actions",
+  },
+  uniwork_topic_sales_forecast: {
+    topicLabel: "mock.uniworkTopicSalesForecast",
+    user: "uniwork.mockTranscript.forecast.user",
+    toolName: "univer formulas",
+    toolArgs: { file: "~/office/finance-suite/sales-forecast.univer", checks: "drivers,links,confidence" },
+    toolSummary: "uniwork.mockTranscript.forecast.toolSummary",
+    toolOutput: "uniwork.mockTranscript.forecast.toolOutput",
+    outcome: "uniwork.mockTranscript.forecast.outcome",
+    actions: "uniwork.mockTranscript.forecast.actions",
+  },
+  uniwork_topic_contract_register: {
+    topicLabel: "mock.uniworkTopicContractRegister",
+    user: "uniwork.mockTranscript.contract.user",
+    toolName: "univer normalize",
+    toolArgs: { file: "~/office/operations/contracts.univer", table: "contract_register" },
+    toolSummary: "uniwork.mockTranscript.contract.toolSummary",
+    toolOutput: "uniwork.mockTranscript.contract.toolOutput",
+    outcome: "uniwork.mockTranscript.contract.outcome",
+    actions: "uniwork.mockTranscript.contract.actions",
+  },
+  uniwork_topic_okr_weekly: {
+    topicLabel: "mock.uniworkTopicOkrWeekly",
+    user: "uniwork.mockTranscript.okr.user",
+    toolName: "office pack",
+    toolArgs: { source: "~/office/operations/okr-weekly", output: "weekly-brief" },
+    toolSummary: "uniwork.mockTranscript.okr.toolSummary",
+    toolOutput: "uniwork.mockTranscript.okr.toolOutput",
+    outcome: "uniwork.mockTranscript.okr.outcome",
+    actions: "uniwork.mockTranscript.okr.actions",
+  },
+  uniwork_topic_review_packets: {
+    topicLabel: "mock.uniworkTopicReviewPackets",
+    user: "uniwork.mockTranscript.review.user",
+    toolName: "document binder",
+    toolArgs: { folder: "~/office/operations/review-packet", order: "agenda,workbook,appendix" },
+    toolSummary: "uniwork.mockTranscript.review.toolSummary",
+    toolOutput: "uniwork.mockTranscript.review.toolOutput",
+    outcome: "uniwork.mockTranscript.review.outcome",
+    actions: "uniwork.mockTranscript.review.actions",
+  },
+  uniwork_topic_cli_import: {
+    topicLabel: "mock.uniworkTopicCliImport",
+    user: "uniwork.mockTranscript.import.user",
+    toolName: "univer import --dry-run",
+    toolArgs: { template: "~/tools/univer-cli/templates/batch-import.xlsx", profile: "office-suite" },
+    toolSummary: "uniwork.mockTranscript.import.toolSummary",
+    toolOutput: "uniwork.mockTranscript.import.toolOutput",
+    outcome: "uniwork.mockTranscript.import.outcome",
+    actions: "uniwork.mockTranscript.import.actions",
+  },
+  uniwork_topic_cli_merge_preview: {
+    topicLabel: "mock.uniworkTopicCliMergePreview",
+    user: "uniwork.mockTranscript.merge.user",
+    toolName: "univer merge --preview",
+    toolArgs: { base: "forecast-v3.univer", incoming: "forecast-salesops.univer" },
+    toolSummary: "uniwork.mockTranscript.merge.toolSummary",
+    toolOutput: "uniwork.mockTranscript.merge.toolOutput",
+    outcome: "uniwork.mockTranscript.merge.outcome",
+    actions: "uniwork.mockTranscript.merge.actions",
+  },
+  uniwork_topic_cli_sidecar: {
+    topicLabel: "mock.uniworkTopicCliSidecar",
+    user: "uniwork.mockTranscript.sidecar.user",
+    toolName: "univer preview doctor",
+    toolArgs: { workspace: "~/tools/univer-cli", port: "auto" },
+    toolSummary: "uniwork.mockTranscript.sidecar.toolSummary",
+    toolOutput: "uniwork.mockTranscript.sidecar.toolOutput",
+    outcome: "uniwork.mockTranscript.sidecar.outcome",
+    actions: "uniwork.mockTranscript.sidecar.actions",
+  },
+  uniwork_global_office_automation: {
+    topicLabel: "mock.uniworkTopicOfficeAutomation",
+    user: "uniwork.mockTranscript.automation.user",
+    toolName: "template audit",
+    toolArgs: { folder: "~/office/templates", scope: "approval-ready" },
+    toolSummary: "uniwork.mockTranscript.automation.toolSummary",
+    toolOutput: "uniwork.mockTranscript.automation.toolOutput",
+    outcome: "uniwork.mockTranscript.automation.outcome",
+    actions: "uniwork.mockTranscript.automation.actions",
+  },
+  uniwork_global_cli_recipes: {
+    topicLabel: "mock.uniworkTopicCliRecipes",
+    user: "uniwork.mockTranscript.recipes.user",
+    toolName: "recipe index",
+    toolArgs: { folder: "~/tools/univer-cli/recipes", audience: "office-agents" },
+    toolSummary: "uniwork.mockTranscript.recipes.toolSummary",
+    toolOutput: "uniwork.mockTranscript.recipes.toolOutput",
+    outcome: "uniwork.mockTranscript.recipes.outcome",
+    actions: "uniwork.mockTranscript.recipes.actions",
+  },
+};
+
+export function hasUniworkMockScenario(topicId?: string): boolean {
+  return Boolean(topicId && UNIWORK_MOCK_SCENARIOS[topicId]);
+}
+
+function uniworkMockScenario(topicId?: string): UniworkMockScenario {
+  return UNIWORK_MOCK_SCENARIOS[topicId || ""] ?? UNIWORK_MOCK_SCENARIOS[DEFAULT_UNIWORK_MOCK_TOPIC];
+}
+
+function buildUniworkMockTranscript(t: Translator, topicId?: string): Item[] {
+  const scenario = uniworkMockScenario(topicId);
+  const topicKey = topicId || DEFAULT_UNIWORK_MOCK_TOPIC;
+  const task = t(scenario.topicLabel);
+  const toolOutput = t(scenario.toolOutput);
+  const outcome = t(scenario.outcome);
+  const actions = t(scenario.actions);
+  const now = Date.now();
+  const user = (id: string, text: string, minutesAgo: number): Item => ({
+    kind: "user",
+    id,
+    text,
+    createdAt: now - minutesAgo * 60_000,
+  });
+  const assistant = (id: string, text: string): Item => ({
+    kind: "assistant",
+    id,
+    text,
+    reasoning: "",
+    streaming: false,
+  });
+  const tool = (id: string, name: string, args: string, output: string, summary: string, readOnly: boolean, durationMs: number): Item => ({
+    kind: "tool",
+    id,
+    name,
+    args,
+    output,
+    summary,
+    readOnly,
+    status: "done",
+    durationMs,
+  });
+
+  return [
+    user(`uniwork-mock-${topicKey}-u1`, t(scenario.user), 52),
+    assistant(`uniwork-mock-${topicKey}-a1`, t("uniwork.mockTranscript.commonPlan", { task, tool: scenario.toolName })),
+    tool(
+      `uniwork-mock-${topicKey}-t1`,
+      scenario.toolName,
+      JSON.stringify(scenario.toolArgs),
+      toolOutput,
+      t(scenario.toolSummary),
+      true,
+      420,
+    ),
+    assistant(`uniwork-mock-${topicKey}-a2`, t("uniwork.mockTranscript.commonOutcome", { outcome })),
+    user(`uniwork-mock-${topicKey}-u2`, t("uniwork.mockTranscript.commonStructureRequest", { task }), 47),
+    assistant(`uniwork-mock-${topicKey}-a3`, t("uniwork.mockTranscript.commonStructureAnswer", { task, toolOutput })),
+    user(`uniwork-mock-${topicKey}-u3`, t("uniwork.mockTranscript.commonPriorityRequest", { task }), 42),
+    tool(
+      `uniwork-mock-${topicKey}-t2`,
+      "priority map",
+      JSON.stringify({ task, sourceTool: scenario.toolName }),
+      t("uniwork.mockTranscript.commonPriorityToolOutput", { task, outcome }),
+      t("uniwork.mockTranscript.commonPriorityToolSummary"),
+      true,
+      360,
+    ),
+    assistant(`uniwork-mock-${topicKey}-a4`, t("uniwork.mockTranscript.commonPriorityAnswer", { task, outcome })),
+    user(`uniwork-mock-${topicKey}-u4`, t("uniwork.mockTranscript.commonRiskRequest", { task }), 37),
+    assistant(`uniwork-mock-${topicKey}-a5`, t("uniwork.mockTranscript.commonRiskAnswer", { task, outcome, actions })),
+    user(`uniwork-mock-${topicKey}-u5`, t("uniwork.mockTranscript.commonAudienceRequest", { task }), 32),
+    assistant(`uniwork-mock-${topicKey}-a6`, t("uniwork.mockTranscript.commonAudienceAnswer", { task, actions })),
+    user(`uniwork-mock-${topicKey}-u6`, t("uniwork.mockTranscript.commonOwnerRequest", { task }), 27),
+    tool(
+      `uniwork-mock-${topicKey}-t3`,
+      "owner matrix",
+      JSON.stringify({ task, format: "owner,decision,deadline" }),
+      t("uniwork.mockTranscript.commonOwnerToolOutput", { task, actions }),
+      t("uniwork.mockTranscript.commonOwnerToolSummary"),
+      false,
+      390,
+    ),
+    assistant(`uniwork-mock-${topicKey}-a7`, t("uniwork.mockTranscript.commonOwnerAnswer", { task, actions })),
+    user(`uniwork-mock-${topicKey}-u7`, t("uniwork.mockTranscript.commonDraftRequest", { task }), 22),
+    assistant(`uniwork-mock-${topicKey}-a8`, t("uniwork.mockTranscript.commonDraftAnswer", { task, outcome, actions })),
+    user(`uniwork-mock-${topicKey}-u8`, t("uniwork.mockTranscript.commonValidationRequest", { task }), 17),
+    tool(
+      `uniwork-mock-${topicKey}-t4`,
+      "publish check",
+      JSON.stringify({ task, checks: "inputs,risks,handoff" }),
+      t("uniwork.mockTranscript.commonValidationToolOutput", { task, toolOutput }),
+      t("uniwork.mockTranscript.commonValidationToolSummary"),
+      true,
+      440,
+    ),
+    assistant(`uniwork-mock-${topicKey}-a9`, t("uniwork.mockTranscript.commonValidationAnswer", { task, outcome })),
+    user(`uniwork-mock-${topicKey}-u9`, t("uniwork.mockTranscript.commonHandoffRequest", { task }), 12),
+    assistant(`uniwork-mock-${topicKey}-a10`, t("uniwork.mockTranscript.commonHandoffAnswer", { task, actions })),
+    user(`uniwork-mock-${topicKey}-u10`, t("uniwork.mockTranscript.commonFollowUp"), 7),
+    tool(
+      `uniwork-mock-${topicKey}-t5`,
+      "prepare brief",
+      JSON.stringify({ task, format: "next-actions" }),
+      actions,
+      t("uniwork.mockTranscript.commonBriefSummary"),
+      false,
+      510,
+    ),
+    assistant(`uniwork-mock-${topicKey}-a11`, t("uniwork.mockTranscript.commonFinal", { actions })),
+    user(`uniwork-mock-${topicKey}-u11`, t("uniwork.mockTranscript.commonCloseRequest", { task }), 3),
+    assistant(`uniwork-mock-${topicKey}-a12`, t("uniwork.mockTranscript.commonCloseAnswer", { task, actions })),
+  ];
+}
+
+function UniworkWelcome({ onPrompt }: { onPrompt: (text: string) => void }) {
+  const t = useT();
+  const prompts = [
+    { icon: <FileSpreadsheet size={15} aria-hidden="true" />, text: t("uniwork.welcome.promptWorkbook") },
+    { icon: <FileCheck2 size={15} aria-hidden="true" />, text: t("uniwork.welcome.promptVerify") },
+    { icon: <ListChecks size={15} aria-hidden="true" />, text: t("uniwork.welcome.promptChecklist") },
+  ];
+  return (
+    <section className="uniwork-welcome" aria-label={t("uniwork.welcome.label")} data-entrance="uniwork-welcome">
+      <div className="uniwork-welcome__copy">
+        <div className="uniwork-welcome__eyebrow">
+          <span>{t("uniwork.welcome.kicker")}</span>
+        </div>
+        <h2 className="uniwork-welcome__title">{t("uniwork.welcome.title")}</h2>
+        <p className="uniwork-welcome__body">{t("uniwork.welcome.body")}</p>
+      </div>
+      <div className="uniwork-welcome__prompts">
+        {prompts.map((prompt) => (
+          <button key={prompt.text} type="button" className="uniwork-welcome__prompt" onClick={() => onPrompt(prompt.text)}>
+            {prompt.icon}
+            <span>{prompt.text}</span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function UniworkTranscript({
-  items,
+  items: sourceItems,
   live,
   tabId,
   footerHeight = 0,
@@ -90,12 +356,12 @@ export function UniworkTranscript({
   rewindDisabled = false,
   running = false,
   questionNavigator = true,
-  welcomeVariant = "default",
   creationMode = false,
   actionHoverMenus = false,
   rewindSignal = 0,
   revealSignal = 0,
   hydrating = false,
+  mockTopicId,
 }: {
   items: Item[];
   live?: LiveStream;
@@ -109,14 +375,17 @@ export function UniworkTranscript({
   rewindDisabled?: boolean;
   running?: boolean;
   questionNavigator?: boolean;
-  welcomeVariant?: "default" | "creation";
   creationMode?: boolean;
   actionHoverMenus?: boolean;
   rewindSignal?: number;
   revealSignal?: number;
   hydrating?: boolean;
+  mockTopicId?: string;
 }) {
   const t = useT();
+  const showMockTranscript = sourceItems.length === 0 && !hydrating && !running && hasUniworkMockScenario(mockTopicId);
+  const items = useMemo(() => showMockTranscript ? buildUniworkMockTranscript(t, mockTopicId) : sourceItems, [mockTopicId, showMockTranscript, sourceItems, t]);
+  const liveStream = showMockTranscript ? undefined : live;
   const {
     scrollRef,
     stick,
@@ -205,17 +474,25 @@ export function UniworkTranscript({
   useEffect(() => {
     if (!pendingRevealBottomScroll.current || items.length === 0) return;
     pendingRevealBottomScroll.current = false;
+    if (showMockTranscript) {
+      const frame = requestAnimationFrame(() => {
+        const el = scrollRef.current;
+        if (el) el.scrollTop = 0;
+      });
+      return () => cancelAnimationFrame(frame);
+    }
     const frame = requestAnimationFrame(() => {
       scrollToBottomAfterLayout(5);
     });
     return () => cancelAnimationFrame(frame);
-  }, [items.length, revealSignal, scrollToBottomAfterLayout, tabId]);
+  }, [items.length, revealSignal, scrollRef, scrollToBottomAfterLayout, showMockTranscript, tabId]);
 
   // Auto-scroll to bottom during streaming. Coalesce fast token/reasoning
   // updates into one layout read/write per animation frame.
   const contentVersion = useMemo(() => scrollVersion(items), [items]);
   useEffect(() => {
     if (items.length === 0) return;
+    if (showMockTranscript) return;
     if (!stick.current) return;
     if (autoScrollFrame.current !== null) return;
     autoScrollFrame.current = requestAnimationFrame(() => {
@@ -224,7 +501,7 @@ export function UniworkTranscript({
       const el = scrollRef.current;
       if (el) el.scrollTop = el.scrollHeight;
     });
-  }, [contentVersion, live?.text?.length ?? 0, live?.reasoning?.length ?? 0]);
+  }, [contentVersion, liveStream?.text?.length ?? 0, liveStream?.reasoning?.length ?? 0, showMockTranscript]);
   useEffect(() => {
     return () => {
       if (autoScrollFrame.current !== null) {
@@ -357,9 +634,10 @@ export function UniworkTranscript({
   // the warm/cold zone JSX trees. Uses LiveStreamContext for streaming data
   // (added by upstream PR #3423) instead of per-call renderSegments.
   const empty = items.length === 0;
+  const showWelcome = empty && !hydrating;
 
   useLayoutEffect(() => {
-    if (!empty) return;
+    if (!empty && !showMockTranscript) return;
     const el = scrollRef.current;
     if (!el) return;
     el.scrollTop = 0;
@@ -368,7 +646,7 @@ export function UniworkTranscript({
       el.scrollTop = 0;
     });
     return () => cancelAnimationFrame(frame);
-  }, [empty, scrollRef, stick, tabId]);
+  }, [empty, scrollRef, showMockTranscript, stick, tabId]);
 
   // In compact mode, break each turn into step groups.
   // A step = one assistant + its tool results, from one assistant to the next.
@@ -644,9 +922,9 @@ export function UniworkTranscript({
         ref={scrollRef}
         onScroll={handleTranscriptScroll}
       >
-        {empty && !hydrating && <Welcome onPrompt={onPrompt} variant={welcomeVariant} />}
+        {showWelcome && <UniworkWelcome onPrompt={onPrompt} />}
 
-        <LiveStreamContext.Provider value={live}>
+        <LiveStreamContext.Provider value={liveStream}>
           {turnGroups.length > HOT_TURNS && (
             <WarmZone
               turnGroups={turnGroups}

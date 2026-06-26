@@ -57,9 +57,11 @@ export function UniworkSidebar({ projectTreeSlot }: { projectTreeSlot: ReactNode
 }
 
 export function UniworkMode({
+  actionsRailVisible = true,
   composerSlot,
   transcriptSlot,
 }: {
+  actionsRailVisible?: boolean;
   composerSlot: ReactNode;
   transcriptSlot: ReactNode;
 }) {
@@ -67,11 +69,11 @@ export function UniworkMode({
 
   return (
     <section className="uniwork-shell" aria-label={t("uniwork.home.previewLabel")}>
-      <div className="uniwork-body">
+      <div className={`uniwork-body${actionsRailVisible ? "" : " uniwork-body--actions-hidden"}`}>
         <main className="uniwork-transcript-pane" aria-label={t("uniwork.home.label")}>
           {transcriptSlot}
         </main>
-        <aside className="uniwork-actions-rail" aria-label={t("uniwork.actions.label")}>
+        <aside className="uniwork-actions-rail" aria-label={t("uniwork.actions.label")} aria-hidden={!actionsRailVisible}>
           <div className="uniwork-actions-rail__skeleton" aria-hidden="true">
             <div className="uniwork-actions-rail__toolbar">
               <span className="uniwork-actions-rail__button uniwork-actions-rail__button--active" />
