@@ -160,7 +160,93 @@ Alternatives considered:
 - Keep the current Workspace file preview IA and only change the renderer. Rejected because a `.univer` workflow needs draft/review/action state, not just file selection.
 - Make Cowork a standalone review queue without transcript continuity. Rejected because Reasonix's core value is agent collaboration history and recoverable decisions.
 
-### 9. Lifecycle events remain Univer-owned
+### 9. Cowork Blocks are structured office milestones
+
+Cowork Blocks are the native transcript objects that make `.univer` collaboration understandable and restorable. They should be generated only by Reasonix host code or Univer tooling evidence, not by arbitrary model-authored JSON.
+
+Each block should carry a stable envelope:
+
+- `blockId`: host-generated stable id.
+- `schemaVersion`: Cowork Block schema version for restoration.
+- `kind`: `target`, `draftStatus`, `reviewRequest`, `actionResult`, or `capabilityFailure`.
+- `createdAt`: host timestamp.
+- `source`: `host` or `univer-tooling`.
+- `targetRef`: host target id, display name, redacted display path, and source identity.
+- `unitRef`: optional unit id, unit type, display name, and head revision.
+- `scopeRef`: trunk, worktree, or merge preview scope.
+- `status`: canonical protocol status where applicable plus user-facing status copy.
+- `summary`: short office-language sentence for transcript scanning.
+- `actions`: typed user actions that the host adapter can approve and execute.
+- `diagnostics`: optional secondary technical details for troubleshooting.
+
+Block kinds should serve distinct UX jobs:
+
+- `target`: confirms which document, spreadsheet, or slide deck is now in Cowork.
+- `draftStatus`: shows whether a draft is in progress, ready for review, applied, or discarded.
+- `reviewRequest`: asks the user to inspect changes, attention areas, or a decision point before applying.
+- `actionResult`: records that a draft was applied, kept for editing, discarded, or failed.
+- `capabilityFailure`: explains why Cowork cannot proceed and offers recovery where possible.
+
+Alternatives considered:
+
+- Store raw gateway responses as transcript blocks. Rejected because that would leak implementation details and make future UI migration harder.
+- Let the model author Cowork Blocks directly. Rejected because transcript state must be backed by real host/tooling evidence.
+
+### 10. Cowork visual hierarchy favors decisions over diagnostics
+
+Cowork visual hierarchy should make the next office decision obvious before showing implementation detail:
+
+1. Active document identity and user-facing status.
+2. What changed or what the agent is doing.
+3. What needs attention or review.
+4. Primary safe action, usually open, review changes, apply draft, keep editing, or discard draft.
+5. Secondary diagnostics, protocol names, revisions, or gateway details.
+
+Transcript Cowork Blocks should read as compact milestones by default. A milestone shows title, target, status badge, one-sentence summary, and up to two primary actions. Expanded details can show unit, scope, revision, capability flags, and diagnostics, but those details should not dominate the default view.
+
+Focused Cowork surfaces can be larger and more document-like: document header, unit switcher, draft status, review summary, and the Univer-rendered content. They should avoid terminal/log styling and should keep plain-language actions visible near the document.
+
+### 11. First Cowork screen is a document workspace, not an empty chat
+
+When Cowork is opened without an active target, the shell should help an office user start from work objects:
+
+- Activity switch: Code and Cowork, with Cowork active.
+- Cowork sidebar: recent Cowork sessions, recent document targets, and ready-for-review drafts where available.
+- Transcript: a concise empty state explaining that the user can ask the agent to work on a document, spreadsheet, or slide deck.
+- Primary actions: open a `.univer` file, continue a recent Cowork session, or review a ready draft.
+- Focused work area: a neutral document-workspace placeholder, not a blank code preview.
+
+When a target is active, first-screen priority changes:
+
+- Sidebar keeps session/document navigation.
+- Transcript shows the latest user request, agent response, and the current Cowork Block milestone.
+- Focused work area shows the selected unit or review surface.
+- Composer remains available for natural-language document requests.
+
+This keeps Reasonix's existing shell model while making Cowork feel like a native office collaboration mode.
+
+### 12. State copy is part of the product contract
+
+The first V2 copy set should be stable enough for localization and tests:
+
+- Empty target: "Open a document, spreadsheet, or slide deck to start Cowork."
+- Opening target: "Opening document..."
+- Target ready: "Ready to work on this document."
+- Draft in progress: "Draft in progress."
+- Ready for review: "Ready for your review."
+- Review changes: "Review changes."
+- Apply draft: "Apply draft."
+- Keep editing: "Keep editing."
+- Discard draft: "Discard draft."
+- Applied: "Draft applied."
+- Discarded: "Draft discarded."
+- Needs decision: "Needs your decision."
+- Tooling unavailable: "Cowork cannot open this document right now."
+- Incompatible protocol: "This document needs a newer Cowork integration."
+
+Protocol names such as `merge`, `worktree`, `daemon`, and `gateway` may appear in secondary diagnostics, developer logs, or copied error details, but not as the main visible title or action label for office users.
+
+### 13. Lifecycle events remain Univer-owned
 
 Univer gateway SSE events remain the source for worktree registry/status, reset, and unit add/remove. Cowork components may subscribe directly through Univer package logic when a Gateway Endpoint is available, but transcript persistence is Reasonix-owned: only host-generated Cowork Blocks become session records.
 
@@ -169,7 +255,7 @@ Alternatives considered:
 - Persist every daemon or SSE event into transcript. Rejected because most lifecycle noise is operational state, not user-level conversation history.
 - Proxy all Gateway traffic through Go by default. Rejected unless required by security/policy, because the existing browser client path already uses local HTTP/WS/SSE.
 
-### 10. V1 Live Univer Preview is removed after Cowork ships
+### 14. V1 Live Univer Preview is removed after Cowork ships
 
 When Cowork Mode satisfies the `.univer` workflow, the V1 preview iframe and Code-activity preview routing should be removed. Code may still offer a route into Cowork for `.univer` files, but it should not present document/spreadsheet/slide work as a Code preview.
 
@@ -183,6 +269,7 @@ Alternatives considered:
 - Local path exposure through browser URLs -> Mitigate by keeping paths local-only, redacting diagnostics, and preferring host display paths in persisted state.
 - Gateway unavailable or stale -> Mitigate with typed capability failures, retry, and Go bridge diagnostics rather than transcript errors.
 - Office-user confusion from protocol language -> Mitigate with a stable user-facing vocabulary layer and optional technical details only where diagnostics require them.
+- Cowork Blocks becoming noisy transcript clutter -> Mitigate with milestone-level block creation, compact default rendering, and details hidden behind disclosure.
 - Worktree action ambiguity in UI copy -> Mitigate by keeping protocol names in adapter contracts and mapping user-facing "accept" copy to `merge` in one place.
 - Frontend package overreach into host state -> Mitigate by requiring host adapter inversion and limiting package authority to render/headless component logic.
 - V1 removal regression -> Mitigate with an explicit migration task list and tests proving `.univer` entries route to Cowork.

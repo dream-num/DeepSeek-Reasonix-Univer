@@ -13,6 +13,7 @@ Reasonix V1 Live Univer Preview embeds the standalone Collab Client, which is en
 - Support the V2 worktree path for status, open, ready, merge, discard, merge preview, and conflict display through Univer tooling authority.
 - Persist host-generated Cowork Blocks in the transcript for targets, worktree state, action results, and capability failures.
 - Render Cowork Blocks as document milestones and decision surfaces instead of raw tool logs or developer diagnostics.
+- Specify Cowork Block fields, visual hierarchy, state copy, and first-screen layout states for the office-native Cowork shell.
 - **BREAKING**: remove the V1 Live Univer Preview iframe path after Cowork Mode is implemented; `.univer` work should route to Cowork rather than Code preview.
 
 ## Capabilities

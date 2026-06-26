@@ -37,6 +37,28 @@ Reasonix Desktop SHALL own the Cowork shell layout and embed Univer Cowork compo
 - **THEN** Reasonix Desktop renders the Univer-provided Cowork component for the active target
 - **AND** it keeps session navigation, transcript, approvals, and shell chrome under Reasonix ownership
 
+### Requirement: Provide a document-oriented Cowork first screen
+
+Reasonix Desktop SHALL make the Cowork first screen feel like a document collaboration workspace rather than an empty code chat.
+
+#### Scenario: Cowork opens without an active target
+
+- **WHEN** the user opens Cowork with no active `.univer` target
+- **THEN** Reasonix Desktop shows a Cowork shell with session/document navigation, a transcript empty state, and a focused document-workspace placeholder
+- **AND** the primary entry actions include opening a `.univer` file, continuing a recent Cowork session, or reviewing a ready draft when available
+
+#### Scenario: Cowork opens with recent ready drafts
+
+- **WHEN** Reasonix has persisted Cowork sessions or targets with ready-for-review drafts
+- **THEN** the Cowork first screen makes those drafts scannable from the Cowork navigation or transcript
+- **AND** each ready draft exposes a review action without requiring the user to browse the raw workspace file tree first
+
+#### Scenario: Cowork opens with an active target
+
+- **WHEN** a Cowork target is already active for the session
+- **THEN** Reasonix Desktop shows the latest Cowork Block milestone in the transcript
+- **AND** it shows the selected Univer unit or review surface in the focused work area
+
 ### Requirement: Present Cowork as office-native document collaboration
 
 Reasonix Desktop SHALL present Cowork Mode with user-facing language and hierarchy suitable for office workers collaborating on documents, spreadsheets, and slides.
@@ -52,6 +74,32 @@ Reasonix Desktop SHALL present Cowork Mode with user-facing language and hierarc
 - **WHEN** a Cowork capability failure or incompatibility state includes technical details
 - **THEN** Reasonix Desktop displays a plain-language summary first
 - **AND** it keeps technical details secondary or expandable
+
+### Requirement: Use stable Cowork state copy
+
+Reasonix Desktop SHALL use stable office-language labels for common Cowork states and actions.
+
+#### Scenario: No target is selected
+
+- **WHEN** Cowork has no active target
+- **THEN** the primary empty-state copy communicates that the user can open a document, spreadsheet, or slide deck to start Cowork
+
+#### Scenario: Target is opening
+
+- **WHEN** Reasonix is creating or restoring a Cowork target
+- **THEN** the visible status copy says the document is opening
+- **AND** it does not describe daemon startup or gateway discovery as the primary message
+
+#### Scenario: Target is ready
+
+- **WHEN** Univer tooling reports that a target is ready to render
+- **THEN** the visible status copy says the document is ready to work on
+
+#### Scenario: Draft action labels are shown
+
+- **WHEN** Cowork renders draft review actions
+- **THEN** the primary action labels use office-language copy such as review changes, apply draft, keep editing, and discard draft
+- **AND** protocol operation names remain internal or secondary diagnostics
 
 ### Requirement: Map gateway worktree state to office draft language
 
@@ -171,6 +219,28 @@ Reasonix Desktop SHALL organize the Cowork shell information architecture around
 - **THEN** Reasonix Desktop provides a review surface that summarizes what changed, what needs attention, and the available next actions
 - **AND** it offers safe actions such as apply draft, keep editing, or discard draft according to reported capabilities
 
+### Requirement: Apply Cowork visual hierarchy consistently
+
+Reasonix Desktop SHALL prioritize Cowork UI information by office decision value before implementation detail.
+
+#### Scenario: Cowork milestone is rendered in the transcript
+
+- **WHEN** a Cowork Block is shown in the transcript
+- **THEN** its default view prioritizes target title, user-facing status, one-sentence summary, and available next action
+- **AND** secondary fields such as unit id, scope, revision, protocol status, gateway origin, and diagnostics are hidden or visually subordinate
+
+#### Scenario: Cowork review surface is rendered
+
+- **WHEN** a draft is ready for review
+- **THEN** the review surface prioritizes what changed, what needs attention, and the next safe action
+- **AND** detailed protocol or revision data does not displace the review summary
+
+#### Scenario: Technical details are expanded
+
+- **WHEN** the user expands technical details for support or debugging
+- **THEN** Reasonix Desktop may show canonical status, unit id, scope, revision, protocol version, failure code, or gateway detail
+- **AND** the primary Cowork copy remains plain-language and office-oriented
+
 ### Requirement: Open trunk and worktree views through Cowork target scope
 
 Reasonix Desktop SHALL open trunk, worktree, and merge preview views by updating Cowork target scope.
@@ -227,6 +297,24 @@ Reasonix Desktop SHALL support merge preview data exposed by Univer tooling with
 
 Reasonix Desktop SHALL persist Cowork Blocks that are generated from host or Univer tooling evidence.
 
+#### Scenario: Cowork block is serialized
+
+- **WHEN** Reasonix persists a Cowork Block
+- **THEN** the block includes a host-generated block id, schema version, kind, timestamp, source, target reference, optional unit reference, optional scope reference, status, summary, available actions, and optional diagnostics
+- **AND** persisted diagnostics do not replace the user-facing summary
+
+#### Scenario: Cowork block target reference is serialized
+
+- **WHEN** a Cowork Block references a document target
+- **THEN** the target reference includes host target id, display name, redacted display path, and source identity
+- **AND** it does not require storing a raw gateway URL as the user-facing identity
+
+#### Scenario: Cowork block actions are serialized
+
+- **WHEN** a Cowork Block exposes actions
+- **THEN** each action has a stable typed action id, user-facing label, availability state, and required approval level
+- **AND** action execution still flows through the Reasonix Cowork host adapter
+
 #### Scenario: Cowork target is opened
 
 - **WHEN** Reasonix opens a Cowork target from user action or agent activity
@@ -244,6 +332,36 @@ Reasonix Desktop SHALL persist Cowork Blocks that are generated from host or Uni
 - **WHEN** a Cowork target opens, a draft becomes ready for review, changes are applied, or a draft is discarded
 - **THEN** Reasonix Desktop may render the Cowork Block as an office milestone in the transcript
 - **AND** the block provides concise document identity, status, and next action copy without raw tool-log presentation
+
+#### Scenario: Cowork block kind is target
+
+- **WHEN** Reasonix creates a target Cowork Block
+- **THEN** the block confirms the active document, spreadsheet, or slide deck and its current unit where available
+- **AND** it offers open or focus actions according to active capabilities
+
+#### Scenario: Cowork block kind is draftStatus
+
+- **WHEN** Reasonix creates a draft status Cowork Block
+- **THEN** the block includes the canonical worktree status, user-facing draft status, worktree id, and available review actions where relevant
+- **AND** it preserves canonical gateway status for restoration and adapter execution
+
+#### Scenario: Cowork block kind is reviewRequest
+
+- **WHEN** Reasonix creates a review request Cowork Block
+- **THEN** the block summarizes what changed, what needs attention, and the next safe actions
+- **AND** it may link to a merge preview scope when Univer tooling reports one
+
+#### Scenario: Cowork block kind is actionResult
+
+- **WHEN** a merge, discard, target open, or capability check completes
+- **THEN** the block records the user-facing outcome and the canonical operation result needed for restoration
+- **AND** it does not present raw operation payload as the main transcript content
+
+#### Scenario: Cowork block kind is capabilityFailure
+
+- **WHEN** Cowork cannot open, render, or operate on a target
+- **THEN** the block displays a plain-language failure title, suggested recovery action where available, and optional diagnostics
+- **AND** it is visually distinct from ordinary assistant text
 
 ### Requirement: Route Univerfile work to Cowork
 

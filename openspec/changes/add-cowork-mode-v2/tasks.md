@@ -19,6 +19,8 @@
 - [ ] 3.3 Implement the transcript-first Cowork shell layout with transcript, target status, and focused Univer work regions.
 - [ ] 3.4 Embed Univer Cowork components and headless primitives through the host adapter.
 - [ ] 3.5 Define and implement office-native Cowork information architecture, including session/document/draft/review hierarchy and non-developer primary copy.
+- [ ] 3.6 Implement the Cowork first screen for no-target, recent-session, ready-draft, and active-target states.
+- [ ] 3.7 Apply Cowork visual hierarchy rules for transcript milestones, focused document surfaces, review panels, and expandable diagnostics.
 
 ## 4. Target And Worktree Workflow
 
@@ -32,10 +34,13 @@
 
 ## 5. Transcript Blocks
 
-- [ ] 5.1 Add serializable Cowork Block schemas for target, worktree status, action result, and capability failure blocks.
+- [ ] 5.1 Add serializable Cowork Block schemas for target, draft status, review request, action result, and capability failure blocks.
 - [ ] 5.2 Generate Cowork Blocks only from host/tooling evidence.
 - [ ] 5.3 Restore Cowork Blocks when reopening Cowork sessions.
 - [ ] 5.4 Render Cowork Blocks as document milestones and review decision surfaces rather than raw tool logs.
+- [ ] 5.5 Define Cowork Block envelope fields: block id, schema version, kind, timestamp, source, target ref, unit ref, scope ref, status, summary, actions, and diagnostics.
+- [ ] 5.6 Implement Cowork Block kinds for target, draft status, review request, action result, and capability failure.
+- [ ] 5.7 Localize and test stable Cowork state copy for empty target, opening target, ready target, draft progress, ready review, apply, discard, needs decision, failure, and incompatibility states.
 
 ## 6. V1 Preview Migration
 
