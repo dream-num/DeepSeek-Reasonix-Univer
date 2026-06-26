@@ -1,16 +1,18 @@
 ## Why
 
-Reasonix V1 Live Univer Preview embeds the standalone Collab Client, which is enough for watching a `.univer` file but not enough for a native Cowork workflow around agents, transcript blocks, worktree decisions, and desktop process orchestration. Univer CLI now has concrete `packages/collab*` contracts for gateway, worktree, merge, discard, lifecycle events, and runtime configuration, so Reasonix V2 can integrate those surfaces without inventing a parallel collaboration model.
+Reasonix V1 Live Univer Preview embeds the standalone Collab Client, which is enough for watching a `.univer` file but not enough for a native Cowork workflow around agents, transcript blocks, worktree decisions, and desktop process orchestration. The V2 Cowork workflow is for office workers collaborating on documents, spreadsheets, and slides with an agent, so it needs task-oriented document UX rather than developer-oriented preview or CLI language. Univer CLI now has concrete `packages/collab*` contracts for gateway, worktree, merge, discard, lifecycle events, and runtime configuration, so Reasonix V2 can integrate those surfaces without inventing a parallel collaboration model.
 
 ## What Changes
 
 - Add a dedicated Cowork workspace activity alongside the existing Code activity.
-- Introduce a transcript-first Cowork shell that can embed Univer-provided Cowork components in the transcript, sidebar, panels, and focused work area.
+- Introduce a transcript-first Cowork shell that can embed Univer-provided Cowork components in the transcript, sidebar, panels, and focused work area while presenting office-native document collaboration UX.
+- Translate gateway/worktree terminology into user-facing document draft language such as draft, ready for review, applied, discarded, review changes, apply draft, keep editing, and discard draft.
 - Consume a Univer-owned frontend package, expected to be `@univer/cowork`, with host-neutral React components, headless primitives, and typed intents.
 - Add a Reasonix Cowork host adapter that maps Univer package intents to Reasonix workspace state, approvals, Go bridge calls, and local `univer` executable or daemon orchestration.
 - Align Cowork targets, units, worktrees, and actions with `@univer/collab-gateway-contract` concepts: trunk/worktree scope, `WorktreeStatus`, `WorktreeControlClient` operations, lifecycle SSE, and collaboration runtime config.
 - Support the V2 worktree path for status, open, ready, merge, discard, merge preview, and conflict display through Univer tooling authority.
 - Persist host-generated Cowork Blocks in the transcript for targets, worktree state, action results, and capability failures.
+- Render Cowork Blocks as document milestones and decision surfaces instead of raw tool logs or developer diagnostics.
 - **BREAKING**: remove the V1 Live Univer Preview iframe path after Cowork Mode is implemented; `.univer` work should route to Cowork rather than Code preview.
 
 ## Capabilities

@@ -18,21 +18,24 @@
 - [ ] 3.2 Add Cowork session persistence and restore behavior.
 - [ ] 3.3 Implement the transcript-first Cowork shell layout with transcript, target status, and focused Univer work regions.
 - [ ] 3.4 Embed Univer Cowork components and headless primitives through the host adapter.
+- [ ] 3.5 Define and implement office-native Cowork information architecture, including session/document/draft/review hierarchy and non-developer primary copy.
 
 ## 4. Target And Worktree Workflow
 
 - [ ] 4.1 Create Cowork targets from workspace `.univer` files and agent activity using host-defined display/source identity.
 - [ ] 4.2 Implement trunk/worktree/merge-preview scope selection for the active target.
 - [ ] 4.3 Render worktree status for `open`, `ready`, `merged`, and `discarded`.
-- [ ] 4.4 Implement ready-worktree merge flow, mapping user-facing accept copy to the gateway `merge` operation.
-- [ ] 4.5 Implement discard flow with Reasonix approval and gateway `discard` execution.
-- [ ] 4.6 Display merge preview divergence and conflict results from Univer tooling.
+- [ ] 4.4 Map gateway worktree statuses to office draft labels while preserving canonical statuses internally.
+- [ ] 4.5 Implement ready-worktree merge flow, mapping user-facing apply draft or accept changes copy to the gateway `merge` operation.
+- [ ] 4.6 Implement discard flow with Reasonix approval and gateway `discard` execution.
+- [ ] 4.7 Display merge preview divergence and conflict results from Univer tooling using plain-language review and needs-your-decision states.
 
 ## 5. Transcript Blocks
 
 - [ ] 5.1 Add serializable Cowork Block schemas for target, worktree status, action result, and capability failure blocks.
 - [ ] 5.2 Generate Cowork Blocks only from host/tooling evidence.
 - [ ] 5.3 Restore Cowork Blocks when reopening Cowork sessions.
+- [ ] 5.4 Render Cowork Blocks as document milestones and review decision surfaces rather than raw tool logs.
 
 ## 6. V1 Preview Migration
 

@@ -37,6 +37,44 @@ Reasonix Desktop SHALL own the Cowork shell layout and embed Univer Cowork compo
 - **THEN** Reasonix Desktop renders the Univer-provided Cowork component for the active target
 - **AND** it keeps session navigation, transcript, approvals, and shell chrome under Reasonix ownership
 
+### Requirement: Present Cowork as office-native document collaboration
+
+Reasonix Desktop SHALL present Cowork Mode with user-facing language and hierarchy suitable for office workers collaborating on documents, spreadsheets, and slides.
+
+#### Scenario: Cowork shell is rendered for an office workflow
+
+- **WHEN** a Cowork session is active
+- **THEN** the primary UI uses document collaboration concepts such as document, spreadsheet, slide, draft, review, apply, keep editing, and discard
+- **AND** it does not require the user to understand CLI, daemon, gateway, worktree, merge, protocol, JSON, or log terminology in the primary path
+
+#### Scenario: Technical details are useful for diagnostics
+
+- **WHEN** a Cowork capability failure or incompatibility state includes technical details
+- **THEN** Reasonix Desktop displays a plain-language summary first
+- **AND** it keeps technical details secondary or expandable
+
+### Requirement: Map gateway worktree state to office draft language
+
+Reasonix Desktop SHALL preserve gateway worktree semantics internally while translating them to office-friendly user-facing labels.
+
+#### Scenario: Worktree status is shown to the user
+
+- **WHEN** Cowork UI renders a gateway worktree status
+- **THEN** it may show user-facing draft labels such as in progress, ready for review, applied, or discarded
+- **AND** it preserves the canonical `open`, `ready`, `merged`, or `discarded` status in the target or adapter state
+
+#### Scenario: Merge action is offered
+
+- **WHEN** a ready worktree can be merged
+- **THEN** the primary action copy MAY say apply draft or accept changes
+- **AND** the executed operation remains the gateway `merge` operation
+
+#### Scenario: Conflict requires user attention
+
+- **WHEN** Univer tooling reports a merge conflict
+- **THEN** the primary Cowork UI explains that the draft needs the user's decision
+- **AND** diagnostic details MAY identify the failed unit or conflict source without making protocol terminology the headline
+
 ### Requirement: Use Univer-owned Cowork package
 
 Reasonix Desktop SHALL consume a Univer-published Cowork package for Univer-aware frontend components and contracts.
@@ -117,6 +155,22 @@ Reasonix Desktop SHALL represent Cowork worktree state using the Univer Collab G
 - **THEN** Reasonix Desktop updates Cowork target or block state from that event
 - **AND** it treats Univer tooling as the authority for the worktree status
 
+### Requirement: Organize Cowork around sessions, documents, drafts, and review decisions
+
+Reasonix Desktop SHALL organize the Cowork shell information architecture around office collaboration objects rather than raw workspace file preview.
+
+#### Scenario: Cowork sidebar is shown
+
+- **WHEN** Cowork activity is active
+- **THEN** Reasonix Desktop prioritizes recent Cowork sessions, document targets, and draft/review status where available
+- **AND** it still allows the user to navigate to workspace files when needed
+
+#### Scenario: A draft is ready for review
+
+- **WHEN** Univer tooling reports a ready worktree or merge preview for a Cowork target
+- **THEN** Reasonix Desktop provides a review surface that summarizes what changed, what needs attention, and the available next actions
+- **AND** it offers safe actions such as apply draft, keep editing, or discard draft according to reported capabilities
+
 ### Requirement: Open trunk and worktree views through Cowork target scope
 
 Reasonix Desktop SHALL open trunk, worktree, and merge preview views by updating Cowork target scope.
@@ -184,6 +238,12 @@ Reasonix Desktop SHALL persist Cowork Blocks that are generated from host or Uni
 - **WHEN** a merge, discard, target open, or capability check completes
 - **THEN** Reasonix Desktop may append a Cowork Result Block based on the real operation result
 - **AND** the block is not authored as arbitrary JSON by the model
+
+#### Scenario: Cowork block represents a document milestone
+
+- **WHEN** a Cowork target opens, a draft becomes ready for review, changes are applied, or a draft is discarded
+- **THEN** Reasonix Desktop may render the Cowork Block as an office milestone in the transcript
+- **AND** the block provides concise document identity, status, and next action copy without raw tool-log presentation
 
 ### Requirement: Route Univerfile work to Cowork
 
