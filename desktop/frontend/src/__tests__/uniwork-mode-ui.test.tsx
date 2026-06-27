@@ -218,13 +218,18 @@ console.log("\nuniwork mode ui");
       /function UniworkProjectBar/.test(uniworkModeSource) &&
       /uniwork-project-bar/.test(uniworkModeSource) &&
       /uniwork-project-bar__sidebar-toggle/.test(uniworkModeSource) &&
+      /uniwork-project-bar__tree/.test(uniworkModeSource) &&
+      /uniwork-file-tree/.test(uniworkModeSource) &&
       /uniwork-project-bar__rail-toggle/.test(uniworkModeSource) &&
+      !/uniwork-project-bar__trail/.test(uniworkModeSource) &&
+      !/uniwork-project-bar__project/.test(uniworkModeSource) &&
+      !/uniwork-project-bar__target/.test(uniworkModeSource) &&
       /sidebarCollapsed=\{sidebarCollapsed\}/.test(uniworkModeSource) &&
       /onToggleSidebar=\{onToggleSidebar\}/.test(uniworkModeSource) &&
       /onToggleSidebar=\{toggleSidebar\}/.test(appSource) &&
       !/uniwork-project-bar__health/.test(uniworkModeSource) &&
       !/uniwork\.projectBar\.syncReady/.test(uniworkModeSource) &&
-      /uniwork-target-navigator/.test(uniworkModeSource) &&
+      !/uniwork-target-navigator/.test(uniworkModeSource) &&
       /uniwork-body/.test(uniworkModeSource) &&
       /uniwork-transcript-pane/.test(uniworkModeSource) &&
       /uniwork-task-review-rail-shell/.test(uniworkModeSource) &&
@@ -238,12 +243,18 @@ console.log("\nuniwork mode ui");
       /t\("uniwork\.sidebar\.newTask"\)/.test(uniworkModeSource) &&
       uniworkModeSource.includes("\"uniwork.activitySwitcher.uniwork\"") &&
       /\.uniwork-shell\s*\{[^}]*--uniwork-task-review-rail-width:\s*320px;(?![^}]*--uniwork-composer-text-inset)/s.test(cssSource) &&
-      /\.uniwork-project-bar\s*\{[^}]*display:\s*flex;[^}]*min-height:\s*38px;[^}]*padding:\s*4px 56px;/s.test(cssSource) &&
-      /\.uniwork-project-bar__sidebar-toggle\s*\{[^}]*position:\s*absolute;[^}]*left:\s*8px;[^}]*width:\s*26px;[^}]*height:\s*26px;/s.test(cssSource) &&
-      /\.uniwork-project-bar__rail-toggle\s*\{[^}]*position:\s*absolute;[^}]*right:\s*8px;[^}]*width:\s*26px;[^}]*height:\s*26px;/s.test(cssSource) &&
-      /\.uniwork-project-bar__trail\s*\{[^}]*flex:\s*1 1 auto;[^}]*overflow:\s*hidden;/s.test(cssSource) &&
-      /\.uniwork-project-bar__target\s*\{[^}]*display:\s*inline-grid;[^}]*border:\s*1px solid transparent;[^}]*background:\s*transparent;/s.test(cssSource) &&
-      /\.uniwork-target-navigator\s*\{[^}]*position:\s*absolute;[^}]*width:\s*min\(300px, calc\(100vw - 96px\)\);/s.test(cssSource) &&
+      /\.uniwork-project-bar\s*\{[^}]*display:\s*flex;[^}]*gap:\s*4px;[^}]*min-height:\s*38px;[^}]*padding:\s*4px 8px;/s.test(cssSource) &&
+      /\.uniwork-project-bar__sidebar-toggle\s*\{(?![^}]*position:\s*absolute)[^}]*width:\s*26px;[^}]*height:\s*26px;/s.test(cssSource) &&
+      /\.uniwork-project-bar__rail-toggle\s*\{(?![^}]*position:\s*absolute)[^}]*margin-left:\s*auto;[^}]*width:\s*26px;[^}]*height:\s*26px;/s.test(cssSource) &&
+      /\.uniwork-project-bar__tree\s*\{[^}]*display:\s*inline-flex;[^}]*width:\s*26px;[^}]*height:\s*26px;/s.test(cssSource) &&
+      /\.uniwork-file-tree\s*\{[^}]*width:\s*min\(300px, calc\(100vw - 96px\)\);/s.test(cssSource) &&
+      /\.uniwork-file-tree__item\s*\{[^}]*grid-template-columns:\s*15px minmax\(0, 1fr\) auto;/s.test(cssSource) &&
+      /\.uniwork-file-tree__item small\s*\{[^}]*justify-self:\s*end;/s.test(cssSource) &&
+      /\.uniwork-file-tree__item--depth-1\s*\{[^}]*padding-left:\s*22px;/s.test(cssSource) &&
+      /\.uniwork-file-tree__item--depth-1::before\s*\{[^}]*position:\s*absolute;[^}]*left:\s*7px;/s.test(cssSource) &&
+      !/\.uniwork-project-bar__trail/.test(cssSource) &&
+      !/\.uniwork-project-bar__target/.test(cssSource) &&
+      !/\.uniwork-target-navigator/.test(cssSource) &&
       /\.uniwork-body\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) var\(--uniwork-task-review-rail-width\);[^}]*gap:\s*0;[^}]*transition:\s*grid-template-columns/s.test(cssSource) &&
       /\.uniwork-body--review-hidden\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) 0px;/s.test(cssSource) &&
       /\.uniwork-transcript-pane\s*\{(?![^}]*padding-left:)[^}]*overflow:\s*hidden;/s.test(cssSource) &&
@@ -342,17 +353,21 @@ console.log("\nuniwork mode ui");
       getTaskReviewRailToggleCalls() === 1,
     "Uniwork Project Bar exposes a compact Task Review Rail toggle",
   );
-  const targetNavigatorButton = document.querySelector<HTMLButtonElement>(".uniwork-project-bar__target");
+  const fileTreeButton = document.querySelector<HTMLButtonElement>(".uniwork-project-bar__tree");
   await act(async () => {
-    targetNavigatorButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    fileTreeButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     await flushTimers();
   });
   ok(
-    Boolean(document.querySelector(".uniwork-target-navigator")) &&
-      Boolean(document.querySelector(".uniwork-target-navigator__item--selected")) &&
-      textContent().includes("Files and sheets") &&
-      textContent().includes("Operating summary"),
-    "Uniwork Project Bar opens a compact target navigator popover",
+    Boolean(fileTreeButton) &&
+      fileTreeButton?.querySelectorAll("svg").length === 1 &&
+      !fileTreeButton?.textContent?.trim() &&
+      Boolean(document.querySelector(".uniwork-file-tree")) &&
+      textContent().includes("Project files") &&
+      textContent().includes("Comments and todos.doc") &&
+      !textContent().includes("current file") &&
+      !textContent().includes("selected"),
+    "Uniwork Project Bar exposes an icon-only compact file tree popover",
   );
   ok(
     /\.app--uniwork \.layout\s*\{[^}]*--statusbar-height:\s*0px;/s.test(cssSource) &&

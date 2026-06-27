@@ -2,8 +2,6 @@ import { type ReactNode, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
-  ChevronDown,
-  ChevronRight,
   Code2,
   Eye,
   FileSpreadsheet,
@@ -86,11 +84,16 @@ function UniworkProjectBar({
   onToggleTaskReviewRail?: () => void;
 }) {
   const t = useT();
-  const [navigatorOpen, setNavigatorOpen] = useState(false);
+  const [fileTreeOpen, setFileTreeOpen] = useState(false);
   const targetUnits = [
-    { icon: Table2, name: t("uniwork.projectBar.unitSummary"), meta: t("uniwork.projectBar.unitSummaryMeta"), selected: true },
-    { icon: Table2, name: t("uniwork.projectBar.unitBudget"), meta: t("uniwork.projectBar.unitBudgetMeta"), selected: false },
-    { icon: FileText, name: t("uniwork.projectBar.unitTemplate"), meta: t("uniwork.projectBar.unitTemplateMeta"), selected: false },
+    { icon: Table2, name: t("uniwork.projectBar.unitSummary"), meta: t("uniwork.projectBar.unitSummaryMeta") },
+    { icon: Table2, name: t("uniwork.projectBar.unitBudget"), meta: t("uniwork.projectBar.unitBudgetMeta") },
+    { icon: FileText, name: t("uniwork.projectBar.unitTemplate"), meta: t("uniwork.projectBar.unitTemplateMeta") },
+  ] as const;
+  const fileTreeItems = [
+    { icon: FileSpreadsheet, name: t("uniwork.projectBar.targetName"), meta: t("uniwork.projectBar.fileTreeWorkbookMeta"), depth: 0 },
+    ...targetUnits.map((unit) => ({ ...unit, depth: 1 })),
+    { icon: FileText, name: t("uniwork.projectBar.fileTreeNotes"), meta: t("uniwork.projectBar.fileTreeNotesMeta"), depth: 0 },
   ] as const;
 
   return (
@@ -106,56 +109,48 @@ function UniworkProjectBar({
         {sidebarCollapsed ? <PanelRight size={14} aria-hidden="true" /> : <PanelLeft size={14} aria-hidden="true" />}
       </button>
 
-      <div className="uniwork-project-bar__trail">
-        <span className="uniwork-project-bar__project">
+      <div className="uniwork-project-bar__tree-wrap">
+        <button
+          className="uniwork-project-bar__tree"
+          type="button"
+          aria-label={t("uniwork.projectBar.fileTreeLabel")}
+          title={t("uniwork.projectBar.fileTreeLabel")}
+          aria-haspopup="tree"
+          aria-expanded={fileTreeOpen}
+          onClick={() => setFileTreeOpen((open) => !open)}
+        >
           <FolderTree size={14} aria-hidden="true" />
-          <span>{t("uniwork.projectBar.projectName")}</span>
-        </span>
-        <ChevronRight className="uniwork-project-bar__separator" size={12} aria-hidden="true" />
+        </button>
 
-        <div className="uniwork-project-bar__target-wrap">
-          <button
-            className="uniwork-project-bar__target"
-            type="button"
-            aria-label={`${t("uniwork.projectBar.activeTarget")}: ${t("uniwork.projectBar.targetName")}`}
-            aria-haspopup="menu"
-            aria-expanded={navigatorOpen}
-            onClick={() => setNavigatorOpen((open) => !open)}
-          >
-            <FileSpreadsheet size={14} aria-hidden="true" />
-            <span className="uniwork-project-bar__target-name">{t("uniwork.projectBar.targetName")}</span>
-            <ChevronDown size={12} aria-hidden="true" />
-          </button>
-
-          {navigatorOpen && (
-            <div className="uniwork-target-navigator" role="menu" aria-label={t("uniwork.projectBar.navigatorLabel")}>
-              <div className="uniwork-target-navigator__head">
-                <FolderTree size={14} aria-hidden="true" />
-                <span>{t("uniwork.projectBar.navigatorTitle")}</span>
-              </div>
-              <div className="uniwork-target-navigator__list">
-                {targetUnits.map((unit) => {
-                  const UnitIcon = unit.icon;
-                  return (
-                    <button
-                      className={`uniwork-target-navigator__item${unit.selected ? " uniwork-target-navigator__item--selected" : ""}`}
-                      type="button"
-                      role="menuitem"
-                      aria-current={unit.selected ? "page" : undefined}
-                      key={unit.name}
-                    >
-                      <UnitIcon size={14} aria-hidden="true" />
-                      <span>
-                        <strong>{unit.name}</strong>
-                        <small>{unit.meta}</small>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+        {fileTreeOpen && (
+          <div className="uniwork-file-tree" role="tree" aria-label={t("uniwork.projectBar.fileTreeLabel")}>
+            <div className="uniwork-file-tree__head">
+              <FolderTree size={14} aria-hidden="true" />
+              <span>{t("uniwork.projectBar.fileTreeTitle")}</span>
             </div>
-          )}
-        </div>
+            <div className="uniwork-file-tree__list">
+              {fileTreeItems.map((item) => {
+                const ItemIcon = item.icon;
+                return (
+                  <button
+                    className={[
+                      "uniwork-file-tree__item",
+                      `uniwork-file-tree__item--depth-${item.depth}`,
+                    ].filter(Boolean).join(" ")}
+                    type="button"
+                    role="treeitem"
+                    aria-label={`${t("uniwork.projectBar.openPreview")}: ${item.name}`}
+                    key={`${item.depth}-${item.name}`}
+                  >
+                    <ItemIcon size={14} aria-hidden="true" />
+                    <strong>{item.name}</strong>
+                    <small>{item.meta}</small>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {taskReviewRailAvailable && (

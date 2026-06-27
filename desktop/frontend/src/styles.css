@@ -2867,9 +2867,9 @@ a[href] {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 14px;
+  gap: 4px;
   min-height: 38px;
-  padding: 4px 56px;
+  padding: 4px 8px;
   border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   background: color-mix(in srgb, var(--uniwork-canvas) 96%, var(--bg-soft));
   color: var(--fg);
@@ -2877,9 +2877,6 @@ a[href] {
 
 .uniwork-project-bar__sidebar-toggle {
   --wails-draggable: no-drag;
-  position: absolute;
-  top: 50%;
-  left: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2890,7 +2887,6 @@ a[href] {
   border-radius: 7px;
   background: transparent;
   color: var(--fg-faint);
-  transform: translateY(-50%);
   transition:
     border-color 150ms ease,
     background-color 150ms ease,
@@ -2911,12 +2907,10 @@ a[href] {
 
 .uniwork-project-bar__rail-toggle {
   --wails-draggable: no-drag;
-  position: absolute;
-  top: 50%;
-  right: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  margin-left: auto;
   width: 26px;
   height: 26px;
   padding: 0;
@@ -2924,7 +2918,6 @@ a[href] {
   border-radius: 7px;
   background: transparent;
   color: var(--fg-faint);
-  transform: translateY(-50%);
   transition:
     border-color 150ms ease,
     background-color 150ms ease,
@@ -2944,137 +2937,91 @@ a[href] {
   outline-offset: 2px;
 }
 
-.uniwork-project-bar__trail,
-.uniwork-project-bar__project {
-  display: inline-flex;
-  align-items: center;
-  min-width: 0;
-}
-
-.uniwork-project-bar__trail {
-  flex: 1 1 auto;
-  gap: 6px;
-  overflow: hidden;
-}
-
-.uniwork-project-bar__project {
-  flex: 0 1 auto;
-  gap: 6px;
-  max-width: min(300px, 34vw);
-  color: var(--fg-muted);
-  font-size: var(--font-ui-sm);
-  line-height: 1;
-  font-weight: 640;
-}
-
-.uniwork-project-bar__project svg {
-  flex: 0 0 auto;
-  color: var(--fg-faint);
-}
-
-.uniwork-project-bar__project span,
-.uniwork-project-bar__target-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.uniwork-project-bar__separator {
-  flex: 0 0 auto;
-  color: color-mix(in srgb, var(--fg-faint) 64%, transparent);
-}
-
-.uniwork-project-bar__target-wrap {
+.uniwork-project-bar__tree-wrap {
   position: relative;
   flex: 0 1 auto;
   min-width: 0;
 }
 
-.uniwork-project-bar__target {
-  display: inline-grid;
-  grid-template-columns: 14px minmax(0, 1fr) 12px;
+.uniwork-project-bar__tree {
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  max-width: min(440px, 52vw);
-  min-height: 28px;
-  padding: 4px 7px;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
   border: 1px solid transparent;
   border-radius: 7px;
   background: transparent;
   color: inherit;
   font: inherit;
-  font-size: var(--font-ui-sm);
-  line-height: 1;
-  text-align: left;
   transition:
     border-color 150ms ease,
     background-color 150ms ease,
     color 150ms ease;
 }
 
-.uniwork-project-bar__target:hover,
-.uniwork-project-bar__target[aria-expanded="true"] {
+.uniwork-project-bar__tree:hover,
+.uniwork-project-bar__tree[aria-expanded="true"] {
   border-color: color-mix(in srgb, var(--accent) 18%, var(--border));
   background: color-mix(in srgb, var(--accent-soft) 20%, transparent);
   color: var(--fg);
 }
 
-.uniwork-project-bar__target:focus-visible,
-.uniwork-target-navigator__item:focus-visible {
+.uniwork-project-bar__tree:focus-visible,
+.uniwork-file-tree__item:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--accent) 32%, transparent);
   outline-offset: 2px;
 }
 
-.uniwork-project-bar__target > svg {
+.uniwork-project-bar__tree > svg {
   flex: 0 0 auto;
   color: var(--fg-muted);
 }
 
-.uniwork-project-bar__target-name {
-  color: var(--fg);
-  font-weight: 670;
-}
-
-.uniwork-target-navigator {
+.uniwork-file-tree {
   position: absolute;
   top: calc(100% + 7px);
   left: 0;
   z-index: 8;
   display: grid;
-  gap: 5px;
+  gap: 3px;
   width: min(300px, calc(100vw - 96px));
-  padding: 6px;
+  padding: 4px;
   border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
   border-radius: 9px;
   background: color-mix(in srgb, var(--bg-elev) 98%, var(--uniwork-canvas));
   box-shadow: 0 12px 28px rgba(20, 20, 18, 0.13);
 }
 
-.uniwork-target-navigator__head,
-.uniwork-target-navigator__item {
-  display: flex;
+.uniwork-file-tree__head,
+.uniwork-file-tree__item {
   align-items: center;
   min-width: 0;
 }
 
-.uniwork-target-navigator__head {
+.uniwork-file-tree__head {
+  display: flex;
   gap: 7px;
-  padding: 3px 4px 5px;
+  min-height: 24px;
+  padding: 2px 5px 3px;
   color: var(--fg-muted);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 650;
 }
 
-.uniwork-target-navigator__list {
+.uniwork-file-tree__list {
   display: grid;
   gap: 2px;
 }
 
-.uniwork-target-navigator__item {
-  gap: 8px;
-  min-height: 32px;
-  padding: 5px 7px;
+.uniwork-file-tree__item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 15px minmax(0, 1fr) auto;
+  gap: 7px;
+  min-height: 28px;
+  padding: 4px 6px;
   border: 0;
   border-radius: 7px;
   background: transparent;
@@ -3086,54 +3033,51 @@ a[href] {
     color 150ms ease;
 }
 
-.uniwork-target-navigator__item:hover,
-.uniwork-target-navigator__item--selected {
+.uniwork-file-tree__item:hover {
   background: color-mix(in srgb, var(--accent-soft) 24%, transparent);
 }
 
-.uniwork-target-navigator__item--selected > svg,
-.uniwork-target-navigator__item--selected strong {
-  color: color-mix(in srgb, var(--accent) 72%, var(--fg));
+.uniwork-file-tree__item--depth-1 {
+  padding-left: 22px;
 }
 
-.uniwork-target-navigator__item > span {
-  display: grid;
-  min-width: 0;
-  gap: 1px;
+.uniwork-file-tree__item--depth-1::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 7px;
+  width: 9px;
+  height: 1px;
+  background: color-mix(in srgb, var(--fg-faint) 34%, transparent);
+  transform: translateY(-50%);
 }
 
-.uniwork-target-navigator__item strong,
-.uniwork-target-navigator__item small {
+.uniwork-file-tree__item strong,
+.uniwork-file-tree__item small {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.uniwork-target-navigator__item strong {
+.uniwork-file-tree__item strong {
   color: var(--fg);
-  font-size: var(--font-ui-sm);
+  font-size: 12.5px;
   font-weight: 620;
 }
 
-.uniwork-target-navigator__item small {
+.uniwork-file-tree__item small {
+  justify-self: end;
   color: var(--fg-faint);
-  font-size: 11px;
+  font-size: 10.5px;
+  line-height: 1.25;
+  font-weight: 560;
 }
 
 @media (max-width: 760px) {
   .uniwork-project-bar {
-    padding: 4px 20px 4px 46px;
+    padding: 4px 8px;
   }
-
-  .uniwork-project-bar__project {
-    max-width: 28vw;
-  }
-
-  .uniwork-project-bar__target {
-    max-width: 48vw;
-  }
-
 }
 
 .uniwork-body {
