@@ -230,7 +230,19 @@ export interface ProjectNode {
   children?: ProjectNode[];
 }
 
-export type ProjectTopicStatus = "thinking" | "streaming" | "waiting_confirmation" | "background_job" | "paused" | "error";
+export type ProjectTopicStatus =
+  | "thinking"
+  | "streaming"
+  | "waiting_confirmation"
+  | "background_job"
+  | "paused"
+  | "error"
+  | "running"
+  | "needs_review"
+  | "conflicted"
+  | "merged"
+  | "discarded"
+  | "failed";
 
 export interface TopicMeta {
   id: string;

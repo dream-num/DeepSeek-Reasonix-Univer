@@ -133,7 +133,9 @@ function topicMetaLine(node: ProjectNode, t: Translator, compact = false): strin
   return parts.join(" · ");
 }
 
-const topicStatusLabels: Record<ProjectTopicStatus, DictKey> = {
+type RuntimeProjectTopicStatus = Extract<ProjectTopicStatus, "thinking" | "streaming" | "waiting_confirmation" | "background_job" | "paused" | "error">;
+
+const topicStatusLabels: Record<RuntimeProjectTopicStatus, DictKey> = {
   thinking: "projectTree.status.thinking",
   streaming: "projectTree.status.streaming",
   waiting_confirmation: "projectTree.status.waitingConfirmation",
@@ -142,7 +144,7 @@ const topicStatusLabels: Record<ProjectTopicStatus, DictKey> = {
   error: "projectTree.status.error",
 };
 
-function normalizeTopicStatus(status?: string): ProjectTopicStatus | "" {
+function normalizeTopicStatus(status?: string): RuntimeProjectTopicStatus | "" {
   if (!status) return "";
   if (status === "thinking" || status === "streaming" || status === "waiting_confirmation" || status === "background_job" || status === "paused" || status === "error") {
     return status;
@@ -150,7 +152,7 @@ function normalizeTopicStatus(status?: string): ProjectTopicStatus | "" {
   return "";
 }
 
-function topicStatus(node: ProjectNode): ProjectTopicStatus | "" {
+function topicStatus(node: ProjectNode): RuntimeProjectTopicStatus | "" {
   return normalizeTopicStatus(node.status) || (node.running ? "streaming" : "");
 }
 

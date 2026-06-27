@@ -2850,13 +2850,7 @@ export default function App() {
       mockTopicId={activeTab?.topicId}
     />
   );
-  const uniworkActionsRailVisible = !sidebarImDetailConnection && (
-    displayItems.length > 0 ||
-    transcriptHydrating ||
-    state.running ||
-    rewindCommitting ||
-    hasUniworkMockScenario(activeTab?.topicId)
-  );
+  const uniworkTaskReviewRailVisible = !sidebarImDetailConnection && hasUniworkMockScenario(activeTab?.topicId);
   const projectTreeSection = (
     <section className="sidebar__section sidebar__section--projects">
       <ProjectTree
@@ -3216,7 +3210,7 @@ export default function App() {
         <section className={`chat-pane${sidebarCreation && !sessionHasContent ? " chat-pane--creation-empty" : ""}${uniworkActive ? " chat-pane--uniwork" : ""}`}>
           {uniworkActive ? (
             <UniworkMode
-              actionsRailVisible={uniworkActionsRailVisible}
+              taskReviewRailVisible={uniworkTaskReviewRailVisible}
               transcriptSlot={uniworkTranscript}
               composerSlot={uniworkFooter}
             />

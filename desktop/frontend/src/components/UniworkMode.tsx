@@ -1,8 +1,19 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronDown,
   Code2,
+  Eye,
+  FileSpreadsheet,
   FileText,
+  FolderTree,
+  GitMerge,
+  ListChecks,
   Plus,
+  RotateCcw,
+  Table2,
+  Trash2,
 } from "lucide-react";
 import { useT } from "../lib/i18n";
 
@@ -56,12 +67,164 @@ export function UniworkSidebar({ projectTreeSlot }: { projectTreeSlot: ReactNode
   );
 }
 
+function UniworkProjectBar() {
+  const t = useT();
+  const [navigatorOpen, setNavigatorOpen] = useState(false);
+  const targetUnits = [
+    { icon: Table2, name: t("uniwork.projectBar.unitSummary"), meta: t("uniwork.projectBar.unitSummaryMeta") },
+    { icon: Table2, name: t("uniwork.projectBar.unitBudget"), meta: t("uniwork.projectBar.unitBudgetMeta") },
+    { icon: FileText, name: t("uniwork.projectBar.unitTemplate"), meta: t("uniwork.projectBar.unitTemplateMeta") },
+  ] as const;
+
+  return (
+    <header className="uniwork-project-bar" aria-label={t("uniwork.projectBar.label")}>
+      <div className="uniwork-project-bar__identity">
+        <span className="uniwork-project-bar__eyebrow">{t("uniwork.projectBar.project")}</span>
+        <strong>{t("uniwork.projectBar.projectName")}</strong>
+      </div>
+
+      <div className="uniwork-project-bar__target-wrap">
+        <button
+          className="uniwork-project-bar__target"
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={navigatorOpen}
+          onClick={() => setNavigatorOpen((open) => !open)}
+        >
+          <FileSpreadsheet size={14} aria-hidden="true" />
+          <span className="uniwork-project-bar__target-copy">
+            <span>{t("uniwork.projectBar.activeTarget")}</span>
+            <strong>{t("uniwork.projectBar.targetName")}</strong>
+          </span>
+          <ChevronDown size={13} aria-hidden="true" />
+        </button>
+
+        {navigatorOpen && (
+          <div className="uniwork-target-navigator" role="menu" aria-label={t("uniwork.projectBar.navigatorLabel")}>
+            <div className="uniwork-target-navigator__head">
+              <FolderTree size={14} aria-hidden="true" />
+              <span>{t("uniwork.projectBar.navigatorTitle")}</span>
+            </div>
+            <div className="uniwork-target-navigator__list">
+              {targetUnits.map((unit) => {
+                const UnitIcon = unit.icon;
+                return (
+                  <button className="uniwork-target-navigator__item" type="button" role="menuitem" key={unit.name}>
+                    <UnitIcon size={14} aria-hidden="true" />
+                    <span>
+                      <strong>{unit.name}</strong>
+                      <small>{unit.meta}</small>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="uniwork-project-bar__health" aria-label={t("uniwork.projectBar.healthLabel")}>
+        <span className="uniwork-project-bar__health-dot" aria-hidden="true" />
+        <span>{t("uniwork.projectBar.syncReady")}</span>
+      </div>
+    </header>
+  );
+}
+
+function UniworkTaskReviewRail() {
+  const t = useT();
+
+  const changedUnits = [
+    { icon: Table2, name: t("uniwork.review.unitSummary"), meta: t("uniwork.review.unitSummaryMeta"), badge: t("uniwork.review.badgeModified"), tone: "modified" },
+    { icon: FileText, name: t("uniwork.review.unitTemplate"), meta: t("uniwork.review.unitTemplateMeta"), badge: t("uniwork.review.badgeUpdated"), tone: "updated" },
+    { icon: ListChecks, name: t("uniwork.review.unitTodos"), meta: t("uniwork.review.unitTodosMeta"), badge: t("uniwork.review.badgeNew"), tone: "new" },
+  ] as const;
+
+  return (
+    <div className="uniwork-task-review-rail">
+      <section className="uniwork-review-hero" aria-label={t("uniwork.review.currentReview")}>
+        <div className="uniwork-review-hero__topline">
+          <span className="uniwork-review-hero__label">{t("uniwork.review.label")}</span>
+          <span className="uniwork-review-badge uniwork-review-badge--ready">{t("uniwork.review.ready")}</span>
+        </div>
+        <h2>{t("uniwork.review.title")}</h2>
+        <p>{t("uniwork.review.subtitle")}</p>
+        <div className="uniwork-review-stats" aria-label={t("uniwork.review.summary")}>
+          <span>{t("uniwork.review.statFiles")}</span>
+          <span>{t("uniwork.review.statMergeable")}</span>
+          <span>{t("uniwork.review.statPreview")}</span>
+        </div>
+      </section>
+
+      <section className="uniwork-review-section" aria-label={t("uniwork.review.previewMode")}>
+        <div className="uniwork-review-section__head">
+          <span>{t("uniwork.review.previewMode")}</span>
+          <span className="uniwork-review-section__hint">{t("uniwork.review.previewHint")}</span>
+        </div>
+        <div className="uniwork-review-toggle" role="group" aria-label={t("uniwork.review.previewMode")}>
+          <button className="uniwork-review-toggle__item uniwork-review-toggle__item--active" type="button">
+            <Eye size={13} aria-hidden="true" />
+            <span>{t("uniwork.review.mergePreview")}</span>
+          </button>
+          <button className="uniwork-review-toggle__item" type="button">
+            <RotateCcw size={13} aria-hidden="true" />
+            <span>{t("uniwork.review.originalEdit")}</span>
+          </button>
+        </div>
+      </section>
+
+      <section className="uniwork-review-section" aria-label={t("uniwork.review.changedUnits")}>
+        <div className="uniwork-review-section__head">
+          <span>{t("uniwork.review.changedUnits")}</span>
+          <span className="uniwork-review-section__hint">{t("uniwork.review.unitCount")}</span>
+        </div>
+        <div className="uniwork-review-units">
+          {changedUnits.map((unit) => {
+            const UnitIcon = unit.icon;
+            return (
+              <button className="uniwork-review-unit" type="button" key={unit.name} aria-label={t("uniwork.review.openUnit", { unit: unit.name })}>
+                <UnitIcon size={14} aria-hidden="true" />
+                <span className="uniwork-review-unit__copy">
+                  <span className="uniwork-review-unit__name">{unit.name}</span>
+                  <span className="uniwork-review-unit__meta">{unit.meta}</span>
+                </span>
+                <span className={`uniwork-review-status uniwork-review-status--${unit.tone}`}>{unit.badge}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="uniwork-review-section uniwork-review-section--actions" aria-label={t("uniwork.review.actions")}>
+        <div className="uniwork-review-actions">
+          <button className="uniwork-review-action uniwork-review-action--primary" type="button">
+            <GitMerge size={14} aria-hidden="true" />
+            <span>{t("uniwork.review.merge")}</span>
+          </button>
+          <button className="uniwork-review-action" type="button">
+            <Trash2 size={14} aria-hidden="true" />
+            <span>{t("uniwork.review.discard")}</span>
+          </button>
+        </div>
+        <div className="uniwork-review-note">
+          <CheckCircle2 size={14} aria-hidden="true" />
+          <span>{t("uniwork.review.cleanMerge")}</span>
+        </div>
+        <div className="uniwork-review-note uniwork-review-note--muted">
+          <AlertTriangle size={14} aria-hidden="true" />
+          <span>{t("uniwork.review.trunkAdvanced")}</span>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export function UniworkMode({
-  actionsRailVisible = true,
+  taskReviewRailVisible = true,
   composerSlot,
   transcriptSlot,
 }: {
-  actionsRailVisible?: boolean;
+  taskReviewRailVisible?: boolean;
   composerSlot: ReactNode;
   transcriptSlot: ReactNode;
 }) {
@@ -69,37 +232,13 @@ export function UniworkMode({
 
   return (
     <section className="uniwork-shell" aria-label={t("uniwork.home.previewLabel")}>
-      <div className={`uniwork-body${actionsRailVisible ? "" : " uniwork-body--actions-hidden"}`}>
+      <UniworkProjectBar />
+      <div className={`uniwork-body${taskReviewRailVisible ? "" : " uniwork-body--review-hidden"}`}>
         <main className="uniwork-transcript-pane" aria-label={t("uniwork.home.label")}>
           {transcriptSlot}
         </main>
-        <aside className="uniwork-actions-rail" aria-label={t("uniwork.actions.label")} aria-hidden={!actionsRailVisible}>
-          <div className="uniwork-actions-rail__skeleton" aria-hidden="true">
-            <div className="uniwork-actions-rail__toolbar">
-              <span className="uniwork-actions-rail__button uniwork-actions-rail__button--active" />
-              <span className="uniwork-actions-rail__button" />
-              <span className="uniwork-actions-rail__button" />
-              <span className="uniwork-actions-rail__button uniwork-actions-rail__button--wide" />
-            </div>
-
-            <div className="uniwork-actions-preview">
-              <div className="uniwork-actions-preview__topbar">
-                <span className="uniwork-actions-preview__dot" />
-                <span className="uniwork-actions-preview__line uniwork-actions-preview__line--short" />
-              </div>
-              <div className="uniwork-actions-preview__surface">
-                <span className="uniwork-actions-preview__block uniwork-actions-preview__block--hero" />
-                <span className="uniwork-actions-preview__block" />
-                <span className="uniwork-actions-preview__block uniwork-actions-preview__block--half" />
-              </div>
-            </div>
-
-            <div className="uniwork-actions-rail__rows">
-              <span />
-              <span />
-              <span />
-            </div>
-          </div>
+        <aside className="uniwork-task-review-rail-shell" aria-label={t("uniwork.taskReview.label")} aria-hidden={!taskReviewRailVisible}>
+          {taskReviewRailVisible && <UniworkTaskReviewRail />}
         </aside>
       </div>
 
