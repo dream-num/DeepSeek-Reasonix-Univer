@@ -160,6 +160,25 @@ Alternatives considered:
 - Keep the current Workspace file preview IA and only change the renderer. Rejected because a `.univer` workflow needs draft/review/action state, not just file selection.
 - Make Uniwork a standalone review queue without transcript continuity. Rejected because Reasonix's core value is agent collaboration history and recoverable decisions.
 
+### 8.1 Project orientation and task review are separate
+
+Uniwork should not collapse project, task, and agent-run state into one rail. The shell should use four distinct surfaces:
+
+- Uniwork Project Bar: project-level and target-level orientation, including current project, active target, target navigator, and low-key gateway or sync health.
+- Uniwork Project Tree: navigation where Uniwork sessions are presented as user-visible tasks with task lifecycle state.
+- Uniwork Task Review Rail: selected-task review state only, including changed units, preview mode, readiness, conflicts, merge, and discard.
+- Transcript: selected-task conversation and task audit events.
+
+The user-visible work object is a Uniwork task. An agent run is an execution attempt under that task, not a primary navigation object. A task may start without a target, but it must bind a target before entering worktree review. New tasks inherit the project active target when available; selecting an existing task makes the Project Bar show that task's bound target.
+
+The Project Bar should not show task queue summaries or merge/discard controls. The Task Review Rail should not host project status, file navigation, or agent queue management. Changed units in the review rail are summaries and quick jumps into the selected task's preview, not a full file or unit tree.
+
+Alternatives considered:
+
+- Put agent queue and review state in the right rail. Rejected because it mixes project-level queue management with selected-task review decisions.
+- Put task summaries in the Project Bar. Rejected because the Project Tree already owns task queue navigation, and a second task entry point makes the IA ambiguous.
+- Make agent runs the primary list entity. Rejected because office users should manage tasks and review outcomes, while run details remain secondary execution context.
+
 ### 9. Uniwork Blocks are structured office milestones
 
 Uniwork Blocks are the native transcript objects that make `.univer` collaboration understandable and restorable. They should be generated only by Reasonix host code or Univer tooling evidence, not by arbitrary model-authored JSON.

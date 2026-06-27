@@ -6,6 +6,8 @@ Reasonix V1 Live Univer Preview embeds the standalone Collab Client, which is en
 
 - Add a dedicated Uniwork workspace activity alongside the existing Code activity.
 - Introduce a transcript-first Uniwork shell that can embed Univer-provided Uniwork components in the transcript, sidebar, panels, and focused work area while presenting office-native document collaboration UX.
+- Separate Uniwork project orientation from selected-task review: the project bar orients the user to the current project/target, the project tree presents sessions as tasks, and the right rail appears only for reviewable selected-task state.
+- Treat a Uniwork task as the user-visible work item and an agent run as an execution attempt under that task, so users manage tasks rather than agent processes.
 - Translate gateway/worktree terminology into user-facing document draft language such as draft, ready for review, applied, discarded, review changes, apply draft, keep editing, and discard draft.
 - Consume a Univer-owned frontend package, expected to be `@univer/uniwork`, with host-neutral React components, headless primitives, and typed intents.
 - Add a Reasonix Uniwork host adapter that maps Univer package intents to Reasonix workspace state, approvals, Go bridge calls, and local `univer` executable or daemon orchestration.

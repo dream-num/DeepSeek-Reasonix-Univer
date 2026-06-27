@@ -21,6 +21,12 @@
 - [ ] 3.5 Define and implement office-native Uniwork information architecture, including session/document/draft/review hierarchy and non-developer primary copy.
 - [ ] 3.6 Implement the Uniwork first screen for no-target, recent-session, ready-draft, and active-target states.
 - [ ] 3.7 Apply Uniwork visual hierarchy rules for transcript milestones, focused document surfaces, review panels, and expandable diagnostics.
+- [ ] 3.8 Implement the Uniwork Project Bar for project/target orientation, active target display, target navigator entry, and low-key gateway or sync health.
+- [ ] 3.9 Implement the Uniwork Target Navigator as a project-bar popover for current target files, units, or document structure.
+- [ ] 3.10 Present Uniwork sessions as tasks in the Uniwork Project Tree with user-visible task lifecycle state and only lightweight agent-run hints.
+- [ ] 3.11 Restore the selected task's transcript first when switching tasks, while preserving preview or worktree view state as task context.
+- [ ] 3.12 Show the Uniwork Task Review Rail only for selected tasks with reviewable worktree or merge-preview state.
+- [ ] 3.13 Keep project status, target navigation, task queue management, and agent-run management out of the Uniwork Task Review Rail.
 
 ## 4. Target And Worktree Workflow
 
