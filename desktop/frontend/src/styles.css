@@ -2864,107 +2864,191 @@ a[href] {
 .uniwork-project-bar {
   position: relative;
   z-index: 2;
-  display: grid;
-  grid-template-columns: minmax(160px, auto) minmax(240px, 1fr) auto;
+  display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 44px;
-  padding: 7px 56px;
+  justify-content: flex-start;
+  gap: 14px;
+  min-height: 38px;
+  padding: 4px 56px;
   border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-  background: color-mix(in srgb, var(--uniwork-canvas) 92%, var(--bg-soft));
+  background: color-mix(in srgb, var(--uniwork-canvas) 96%, var(--bg-soft));
   color: var(--fg);
 }
 
-.uniwork-project-bar__identity,
-.uniwork-project-bar__target-copy {
-  display: grid;
-  min-width: 0;
-  gap: 1px;
-}
-
-.uniwork-project-bar__eyebrow,
-.uniwork-project-bar__target-copy span {
+.uniwork-project-bar__sidebar-toggle {
+  --wails-draggable: no-drag;
+  position: absolute;
+  top: 50%;
+  left: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
   color: var(--fg-faint);
-  font-size: 10.5px;
-  line-height: 1.1;
-  font-weight: 620;
-  letter-spacing: 0;
+  transform: translateY(-50%);
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease;
 }
 
-.uniwork-project-bar__identity strong,
-.uniwork-project-bar__target-copy strong {
+.uniwork-project-bar__sidebar-toggle:hover,
+.uniwork-project-bar__sidebar-toggle:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 18%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 18%, transparent);
+  color: var(--fg);
+}
+
+.uniwork-project-bar__sidebar-toggle:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 32%, transparent);
+  outline-offset: 2px;
+}
+
+.uniwork-project-bar__rail-toggle {
+  --wails-draggable: no-drag;
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--fg-faint);
+  transform: translateY(-50%);
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.uniwork-project-bar__rail-toggle:hover,
+.uniwork-project-bar__rail-toggle:focus-visible,
+.uniwork-project-bar__rail-toggle--active {
+  border-color: color-mix(in srgb, var(--accent) 18%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 18%, transparent);
+  color: var(--fg);
+}
+
+.uniwork-project-bar__rail-toggle:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 32%, transparent);
+  outline-offset: 2px;
+}
+
+.uniwork-project-bar__trail,
+.uniwork-project-bar__project {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.uniwork-project-bar__trail {
+  flex: 1 1 auto;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.uniwork-project-bar__project {
+  flex: 0 1 auto;
+  gap: 6px;
+  max-width: min(300px, 34vw);
+  color: var(--fg-muted);
+  font-size: var(--font-ui-sm);
+  line-height: 1;
+  font-weight: 640;
+}
+
+.uniwork-project-bar__project svg {
+  flex: 0 0 auto;
+  color: var(--fg-faint);
+}
+
+.uniwork-project-bar__project span,
+.uniwork-project-bar__target-name {
   min-width: 0;
   overflow: hidden;
-  color: var(--fg);
-  font-size: var(--font-ui-sm);
-  line-height: 1.25;
-  font-weight: 690;
-  letter-spacing: 0;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.uniwork-project-bar__separator {
+  flex: 0 0 auto;
+  color: color-mix(in srgb, var(--fg-faint) 64%, transparent);
+}
+
 .uniwork-project-bar__target-wrap {
   position: relative;
+  flex: 0 1 auto;
   min-width: 0;
 }
 
 .uniwork-project-bar__target {
-  display: grid;
-  grid-template-columns: 16px minmax(0, 1fr) 14px;
+  display: inline-grid;
+  grid-template-columns: 14px minmax(0, 1fr) 12px;
   align-items: center;
-  gap: 8px;
-  width: min(100%, 420px);
-  min-height: 30px;
-  padding: 5px 8px;
-  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--bg-elev) 76%, transparent);
+  gap: 6px;
+  max-width: min(440px, 52vw);
+  min-height: 28px;
+  padding: 4px 7px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
   color: inherit;
   font: inherit;
+  font-size: var(--font-ui-sm);
+  line-height: 1;
   text-align: left;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease;
 }
 
 .uniwork-project-bar__target:hover,
 .uniwork-project-bar__target[aria-expanded="true"] {
-  border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
-  background: color-mix(in srgb, var(--accent-soft) 26%, var(--bg-elev));
+  border-color: color-mix(in srgb, var(--accent) 18%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 20%, transparent);
+  color: var(--fg);
+}
+
+.uniwork-project-bar__target:focus-visible,
+.uniwork-target-navigator__item:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 32%, transparent);
+  outline-offset: 2px;
 }
 
 .uniwork-project-bar__target > svg {
+  flex: 0 0 auto;
   color: var(--fg-muted);
 }
 
-.uniwork-project-bar__health {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 7px;
-  color: var(--fg-muted);
-  font-size: var(--font-ui-sm);
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.uniwork-project-bar__health-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--ok);
+.uniwork-project-bar__target-name {
+  color: var(--fg);
+  font-weight: 670;
 }
 
 .uniwork-target-navigator {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 7px);
   left: 0;
+  z-index: 8;
   display: grid;
-  gap: 6px;
-  width: min(320px, calc(100vw - 96px));
-  padding: 8px;
+  gap: 5px;
+  width: min(300px, calc(100vw - 96px));
+  padding: 6px;
   border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
-  border-radius: 8px;
-  background: var(--bg-elev);
-  box-shadow: 0 16px 34px rgba(20, 20, 18, 0.16);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--bg-elev) 98%, var(--uniwork-canvas));
+  box-shadow: 0 12px 28px rgba(20, 20, 18, 0.13);
 }
 
 .uniwork-target-navigator__head,
@@ -2976,7 +3060,7 @@ a[href] {
 
 .uniwork-target-navigator__head {
   gap: 7px;
-  padding: 2px 3px 6px;
+  padding: 3px 4px 5px;
   color: var(--fg-muted);
   font-size: 11px;
   font-weight: 650;
@@ -2989,18 +3073,27 @@ a[href] {
 
 .uniwork-target-navigator__item {
   gap: 8px;
-  min-height: 34px;
-  padding: 6px 7px;
+  min-height: 32px;
+  padding: 5px 7px;
   border: 0;
   border-radius: 7px;
   background: transparent;
   color: inherit;
   font: inherit;
   text-align: left;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
 }
 
-.uniwork-target-navigator__item:hover {
-  background: color-mix(in srgb, var(--accent-soft) 28%, transparent);
+.uniwork-target-navigator__item:hover,
+.uniwork-target-navigator__item--selected {
+  background: color-mix(in srgb, var(--accent-soft) 24%, transparent);
+}
+
+.uniwork-target-navigator__item--selected > svg,
+.uniwork-target-navigator__item--selected strong {
+  color: color-mix(in srgb, var(--accent) 72%, var(--fg));
 }
 
 .uniwork-target-navigator__item > span {
@@ -3026,6 +3119,21 @@ a[href] {
 .uniwork-target-navigator__item small {
   color: var(--fg-faint);
   font-size: 11px;
+}
+
+@media (max-width: 760px) {
+  .uniwork-project-bar {
+    padding: 4px 20px 4px 46px;
+  }
+
+  .uniwork-project-bar__project {
+    max-width: 28vw;
+  }
+
+  .uniwork-project-bar__target {
+    max-width: 48vw;
+  }
+
 }
 
 .uniwork-body {

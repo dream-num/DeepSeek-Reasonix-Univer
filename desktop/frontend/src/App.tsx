@@ -844,6 +844,7 @@ export default function App() {
   const [tabRevealSignal, setTabRevealSignal] = useState(0);
   const [transcriptRevealSignal, setTranscriptRevealSignal] = useState(0);
   const [workspaceActivity, setWorkspaceActivity] = useState<WorkspaceActivity>("code");
+  const [uniworkTaskReviewRailOpen, setUniworkTaskReviewRailOpen] = useState(true);
   const startupSplashVisible = useOverlayStore((s) => s.startupSplashVisible);
   const setStartupSplashVisible = useOverlayStore((s) => s.setStartupSplashVisible);
   // null until the mount probe resolves; true shows the overlay. Probed once —
@@ -1184,6 +1185,9 @@ export default function App() {
     () => sidebarImConnections.find((connection) => connection.id === sidebarImDetailConnectionId) ?? null,
     [sidebarImConnections, sidebarImDetailConnectionId],
   );
+  useEffect(() => {
+    setUniworkTaskReviewRailOpen(true);
+  }, [activeTab?.topicId, sidebarImDetailConnectionId]);
   useEffect(() => {
     let cancelled = false;
     if (!activeTab?.topicId) {
@@ -2850,7 +2854,11 @@ export default function App() {
       mockTopicId={activeTab?.topicId}
     />
   );
-  const uniworkTaskReviewRailVisible = !sidebarImDetailConnection && hasUniworkMockScenario(activeTab?.topicId);
+  const uniworkTaskReviewRailAvailable = !sidebarImDetailConnection && hasUniworkMockScenario(activeTab?.topicId);
+  const uniworkTaskReviewRailVisible = uniworkTaskReviewRailAvailable && uniworkTaskReviewRailOpen;
+  const toggleUniworkTaskReviewRail = useCallback(() => {
+    setUniworkTaskReviewRailOpen((open) => !open);
+  }, []);
   const projectTreeSection = (
     <section className="sidebar__section sidebar__section--projects">
       <ProjectTree
@@ -3210,6 +3218,10 @@ export default function App() {
         <section className={`chat-pane${sidebarCreation && !sessionHasContent ? " chat-pane--creation-empty" : ""}${uniworkActive ? " chat-pane--uniwork" : ""}`}>
           {uniworkActive ? (
             <UniworkMode
+              sidebarCollapsed={sidebarCollapsed}
+              onToggleSidebar={toggleSidebar}
+              taskReviewRailAvailable={uniworkTaskReviewRailAvailable}
+              onToggleTaskReviewRail={toggleUniworkTaskReviewRail}
               taskReviewRailVisible={uniworkTaskReviewRailVisible}
               transcriptSlot={uniworkTranscript}
               composerSlot={uniworkFooter}

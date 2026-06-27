@@ -64,12 +64,23 @@ async function renderUniworkMode() {
   if (!rootEl) throw new Error("missing root");
   const root = createRoot(rootEl);
   const switchCalls: WorkspaceActivity[] = [];
+  let sidebarToggleCalls = 0;
+  let taskReviewRailToggleCalls = 0;
   await act(async () => {
     root.render(
       <LocaleProvider>
         <UniworkActivitySwitch activity="uniwork" onActivityChange={(activity) => switchCalls.push(activity)} />
         <UniworkSidebar projectTreeSlot={<section className="sidebar__section sidebar__section--projects" data-testid="project-tree-slot">Project Tree</section>} />
         <UniworkMode
+          sidebarCollapsed={false}
+          onToggleSidebar={() => {
+            sidebarToggleCalls += 1;
+          }}
+          taskReviewRailAvailable={true}
+          taskReviewRailVisible={true}
+          onToggleTaskReviewRail={() => {
+            taskReviewRailToggleCalls += 1;
+          }}
           transcriptSlot={<section data-testid="uniwork-transcript-slot">Uniwork transcript</section>}
           composerSlot={
             <footer className="footer" data-testid="shared-agent-footer">
@@ -81,14 +92,14 @@ async function renderUniworkMode() {
     );
     await flushTimers();
   });
-  return { root, switchCalls };
+  return { root, switchCalls, getSidebarToggleCalls: () => sidebarToggleCalls, getTaskReviewRailToggleCalls: () => taskReviewRailToggleCalls };
 }
 
 console.log("\nuniwork mode ui");
 
 {
   const dom = installDom();
-  const { root, switchCalls } = await renderUniworkMode();
+  const { root, switchCalls, getSidebarToggleCalls, getTaskReviewRailToggleCalls } = await renderUniworkMode();
 
   ok(
     document.querySelector(".uniwork-activity-switch__item--active")?.textContent === "Uniwork",
@@ -199,10 +210,20 @@ console.log("\nuniwork mode ui");
       /transcriptSlot/.test(uniworkModeSource) &&
       /taskReviewRailVisible/.test(uniworkModeSource) &&
       /taskReviewRailVisible=\{uniworkTaskReviewRailVisible\}/.test(appSource) &&
-      /const uniworkTaskReviewRailVisible = !sidebarImDetailConnection && hasUniworkMockScenario\(activeTab\?\.topicId\);/.test(appSource) &&
-      !/const uniworkTaskReviewRailVisible = !sidebarImDetailConnection && \(/.test(appSource) &&
+      /taskReviewRailAvailable=\{uniworkTaskReviewRailAvailable\}/.test(appSource) &&
+      /onToggleTaskReviewRail=\{toggleUniworkTaskReviewRail\}/.test(appSource) &&
+      /const \[uniworkTaskReviewRailOpen, setUniworkTaskReviewRailOpen\] = useState\(true\);/.test(appSource) &&
+      /const uniworkTaskReviewRailAvailable = !sidebarImDetailConnection && hasUniworkMockScenario\(activeTab\?\.topicId\);/.test(appSource) &&
+      /const uniworkTaskReviewRailVisible = uniworkTaskReviewRailAvailable && uniworkTaskReviewRailOpen;/.test(appSource) &&
       /function UniworkProjectBar/.test(uniworkModeSource) &&
       /uniwork-project-bar/.test(uniworkModeSource) &&
+      /uniwork-project-bar__sidebar-toggle/.test(uniworkModeSource) &&
+      /uniwork-project-bar__rail-toggle/.test(uniworkModeSource) &&
+      /sidebarCollapsed=\{sidebarCollapsed\}/.test(uniworkModeSource) &&
+      /onToggleSidebar=\{onToggleSidebar\}/.test(uniworkModeSource) &&
+      /onToggleSidebar=\{toggleSidebar\}/.test(appSource) &&
+      !/uniwork-project-bar__health/.test(uniworkModeSource) &&
+      !/uniwork\.projectBar\.syncReady/.test(uniworkModeSource) &&
       /uniwork-target-navigator/.test(uniworkModeSource) &&
       /uniwork-body/.test(uniworkModeSource) &&
       /uniwork-transcript-pane/.test(uniworkModeSource) &&
@@ -217,8 +238,12 @@ console.log("\nuniwork mode ui");
       /t\("uniwork\.sidebar\.newTask"\)/.test(uniworkModeSource) &&
       uniworkModeSource.includes("\"uniwork.activitySwitcher.uniwork\"") &&
       /\.uniwork-shell\s*\{[^}]*--uniwork-task-review-rail-width:\s*320px;(?![^}]*--uniwork-composer-text-inset)/s.test(cssSource) &&
-      /\.uniwork-project-bar\s*\{[^}]*grid-template-columns:\s*minmax\(160px, auto\) minmax\(240px, 1fr\) auto;[^}]*padding:\s*7px 56px;/s.test(cssSource) &&
-      /\.uniwork-target-navigator\s*\{[^}]*position:\s*absolute;[^}]*width:\s*min\(320px, calc\(100vw - 96px\)\);/s.test(cssSource) &&
+      /\.uniwork-project-bar\s*\{[^}]*display:\s*flex;[^}]*min-height:\s*38px;[^}]*padding:\s*4px 56px;/s.test(cssSource) &&
+      /\.uniwork-project-bar__sidebar-toggle\s*\{[^}]*position:\s*absolute;[^}]*left:\s*8px;[^}]*width:\s*26px;[^}]*height:\s*26px;/s.test(cssSource) &&
+      /\.uniwork-project-bar__rail-toggle\s*\{[^}]*position:\s*absolute;[^}]*right:\s*8px;[^}]*width:\s*26px;[^}]*height:\s*26px;/s.test(cssSource) &&
+      /\.uniwork-project-bar__trail\s*\{[^}]*flex:\s*1 1 auto;[^}]*overflow:\s*hidden;/s.test(cssSource) &&
+      /\.uniwork-project-bar__target\s*\{[^}]*display:\s*inline-grid;[^}]*border:\s*1px solid transparent;[^}]*background:\s*transparent;/s.test(cssSource) &&
+      /\.uniwork-target-navigator\s*\{[^}]*position:\s*absolute;[^}]*width:\s*min\(300px, calc\(100vw - 96px\)\);/s.test(cssSource) &&
       /\.uniwork-body\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) var\(--uniwork-task-review-rail-width\);[^}]*gap:\s*0;[^}]*transition:\s*grid-template-columns/s.test(cssSource) &&
       /\.uniwork-body--review-hidden\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) 0px;/s.test(cssSource) &&
       /\.uniwork-transcript-pane\s*\{(?![^}]*padding-left:)[^}]*overflow:\s*hidden;/s.test(cssSource) &&
@@ -295,6 +320,28 @@ console.log("\nuniwork mode ui");
       Boolean(document.querySelector(".uniwork-task-review-rail-shell")),
     "Uniwork mode renders the Project Bar, transcript, and Task Review Rail regions",
   );
+  const sidebarToggleButton = document.querySelector<HTMLButtonElement>(".uniwork-project-bar__sidebar-toggle");
+  await act(async () => {
+    sidebarToggleButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await flushTimers();
+  });
+  ok(
+    Boolean(sidebarToggleButton) &&
+      sidebarToggleButton?.getAttribute("aria-label") === "Collapse navigation" &&
+      getSidebarToggleCalls() === 1,
+    "Uniwork Project Bar exposes a compact sidebar collapse toggle",
+  );
+  const taskReviewRailToggleButton = document.querySelector<HTMLButtonElement>(".uniwork-project-bar__rail-toggle");
+  await act(async () => {
+    taskReviewRailToggleButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await flushTimers();
+  });
+  ok(
+    Boolean(taskReviewRailToggleButton) &&
+      taskReviewRailToggleButton?.getAttribute("aria-label") === "Collapse task review" &&
+      getTaskReviewRailToggleCalls() === 1,
+    "Uniwork Project Bar exposes a compact Task Review Rail toggle",
+  );
   const targetNavigatorButton = document.querySelector<HTMLButtonElement>(".uniwork-project-bar__target");
   await act(async () => {
     targetNavigatorButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -302,6 +349,7 @@ console.log("\nuniwork mode ui");
   });
   ok(
     Boolean(document.querySelector(".uniwork-target-navigator")) &&
+      Boolean(document.querySelector(".uniwork-target-navigator__item--selected")) &&
       textContent().includes("Files and sheets") &&
       textContent().includes("Operating summary"),
     "Uniwork Project Bar opens a compact target navigator popover",

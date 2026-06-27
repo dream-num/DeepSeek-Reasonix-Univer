@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   ChevronDown,
+  ChevronRight,
   Code2,
   Eye,
   FileSpreadsheet,
@@ -10,6 +11,10 @@ import {
   FolderTree,
   GitMerge,
   ListChecks,
+  PanelLeft,
+  PanelRight,
+  PanelRightClose,
+  PanelRightOpen,
   Plus,
   RotateCcw,
   Table2,
@@ -67,66 +72,104 @@ export function UniworkSidebar({ projectTreeSlot }: { projectTreeSlot: ReactNode
   );
 }
 
-function UniworkProjectBar() {
+function UniworkProjectBar({
+  sidebarCollapsed = false,
+  onToggleSidebar,
+  taskReviewRailAvailable = true,
+  taskReviewRailVisible = true,
+  onToggleTaskReviewRail,
+}: {
+  sidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
+  taskReviewRailAvailable?: boolean;
+  taskReviewRailVisible?: boolean;
+  onToggleTaskReviewRail?: () => void;
+}) {
   const t = useT();
   const [navigatorOpen, setNavigatorOpen] = useState(false);
   const targetUnits = [
-    { icon: Table2, name: t("uniwork.projectBar.unitSummary"), meta: t("uniwork.projectBar.unitSummaryMeta") },
-    { icon: Table2, name: t("uniwork.projectBar.unitBudget"), meta: t("uniwork.projectBar.unitBudgetMeta") },
-    { icon: FileText, name: t("uniwork.projectBar.unitTemplate"), meta: t("uniwork.projectBar.unitTemplateMeta") },
+    { icon: Table2, name: t("uniwork.projectBar.unitSummary"), meta: t("uniwork.projectBar.unitSummaryMeta"), selected: true },
+    { icon: Table2, name: t("uniwork.projectBar.unitBudget"), meta: t("uniwork.projectBar.unitBudgetMeta"), selected: false },
+    { icon: FileText, name: t("uniwork.projectBar.unitTemplate"), meta: t("uniwork.projectBar.unitTemplateMeta"), selected: false },
   ] as const;
 
   return (
     <header className="uniwork-project-bar" aria-label={t("uniwork.projectBar.label")}>
-      <div className="uniwork-project-bar__identity">
-        <span className="uniwork-project-bar__eyebrow">{t("uniwork.projectBar.project")}</span>
-        <strong>{t("uniwork.projectBar.projectName")}</strong>
+      <button
+        className="uniwork-project-bar__sidebar-toggle"
+        type="button"
+        aria-label={sidebarCollapsed ? t("sidebar.expand") : t("sidebar.collapse")}
+        title={sidebarCollapsed ? t("sidebar.expand") : t("sidebar.collapse")}
+        aria-pressed={!sidebarCollapsed}
+        onClick={onToggleSidebar}
+      >
+        {sidebarCollapsed ? <PanelRight size={14} aria-hidden="true" /> : <PanelLeft size={14} aria-hidden="true" />}
+      </button>
+
+      <div className="uniwork-project-bar__trail">
+        <span className="uniwork-project-bar__project">
+          <FolderTree size={14} aria-hidden="true" />
+          <span>{t("uniwork.projectBar.projectName")}</span>
+        </span>
+        <ChevronRight className="uniwork-project-bar__separator" size={12} aria-hidden="true" />
+
+        <div className="uniwork-project-bar__target-wrap">
+          <button
+            className="uniwork-project-bar__target"
+            type="button"
+            aria-label={`${t("uniwork.projectBar.activeTarget")}: ${t("uniwork.projectBar.targetName")}`}
+            aria-haspopup="menu"
+            aria-expanded={navigatorOpen}
+            onClick={() => setNavigatorOpen((open) => !open)}
+          >
+            <FileSpreadsheet size={14} aria-hidden="true" />
+            <span className="uniwork-project-bar__target-name">{t("uniwork.projectBar.targetName")}</span>
+            <ChevronDown size={12} aria-hidden="true" />
+          </button>
+
+          {navigatorOpen && (
+            <div className="uniwork-target-navigator" role="menu" aria-label={t("uniwork.projectBar.navigatorLabel")}>
+              <div className="uniwork-target-navigator__head">
+                <FolderTree size={14} aria-hidden="true" />
+                <span>{t("uniwork.projectBar.navigatorTitle")}</span>
+              </div>
+              <div className="uniwork-target-navigator__list">
+                {targetUnits.map((unit) => {
+                  const UnitIcon = unit.icon;
+                  return (
+                    <button
+                      className={`uniwork-target-navigator__item${unit.selected ? " uniwork-target-navigator__item--selected" : ""}`}
+                      type="button"
+                      role="menuitem"
+                      aria-current={unit.selected ? "page" : undefined}
+                      key={unit.name}
+                    >
+                      <UnitIcon size={14} aria-hidden="true" />
+                      <span>
+                        <strong>{unit.name}</strong>
+                        <small>{unit.meta}</small>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="uniwork-project-bar__target-wrap">
+      {taskReviewRailAvailable && (
         <button
-          className="uniwork-project-bar__target"
+          className={`uniwork-project-bar__rail-toggle${taskReviewRailVisible ? " uniwork-project-bar__rail-toggle--active" : ""}`}
           type="button"
-          aria-haspopup="menu"
-          aria-expanded={navigatorOpen}
-          onClick={() => setNavigatorOpen((open) => !open)}
+          aria-label={taskReviewRailVisible ? t("uniwork.taskReview.collapse") : t("uniwork.taskReview.expand")}
+          title={taskReviewRailVisible ? t("uniwork.taskReview.collapse") : t("uniwork.taskReview.expand")}
+          aria-pressed={taskReviewRailVisible}
+          onClick={onToggleTaskReviewRail}
         >
-          <FileSpreadsheet size={14} aria-hidden="true" />
-          <span className="uniwork-project-bar__target-copy">
-            <span>{t("uniwork.projectBar.activeTarget")}</span>
-            <strong>{t("uniwork.projectBar.targetName")}</strong>
-          </span>
-          <ChevronDown size={13} aria-hidden="true" />
+          {taskReviewRailVisible ? <PanelRightClose size={14} aria-hidden="true" /> : <PanelRightOpen size={14} aria-hidden="true" />}
         </button>
-
-        {navigatorOpen && (
-          <div className="uniwork-target-navigator" role="menu" aria-label={t("uniwork.projectBar.navigatorLabel")}>
-            <div className="uniwork-target-navigator__head">
-              <FolderTree size={14} aria-hidden="true" />
-              <span>{t("uniwork.projectBar.navigatorTitle")}</span>
-            </div>
-            <div className="uniwork-target-navigator__list">
-              {targetUnits.map((unit) => {
-                const UnitIcon = unit.icon;
-                return (
-                  <button className="uniwork-target-navigator__item" type="button" role="menuitem" key={unit.name}>
-                    <UnitIcon size={14} aria-hidden="true" />
-                    <span>
-                      <strong>{unit.name}</strong>
-                      <small>{unit.meta}</small>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="uniwork-project-bar__health" aria-label={t("uniwork.projectBar.healthLabel")}>
-        <span className="uniwork-project-bar__health-dot" aria-hidden="true" />
-        <span>{t("uniwork.projectBar.syncReady")}</span>
-      </div>
+      )}
     </header>
   );
 }
@@ -220,10 +263,18 @@ function UniworkTaskReviewRail() {
 }
 
 export function UniworkMode({
+  sidebarCollapsed = false,
+  onToggleSidebar,
   taskReviewRailVisible = true,
+  taskReviewRailAvailable = taskReviewRailVisible,
+  onToggleTaskReviewRail,
   composerSlot,
   transcriptSlot,
 }: {
+  sidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
+  taskReviewRailAvailable?: boolean;
+  onToggleTaskReviewRail?: () => void;
   taskReviewRailVisible?: boolean;
   composerSlot: ReactNode;
   transcriptSlot: ReactNode;
@@ -232,7 +283,13 @@ export function UniworkMode({
 
   return (
     <section className="uniwork-shell" aria-label={t("uniwork.home.previewLabel")}>
-      <UniworkProjectBar />
+      <UniworkProjectBar
+        sidebarCollapsed={sidebarCollapsed}
+        onToggleSidebar={onToggleSidebar}
+        taskReviewRailAvailable={taskReviewRailAvailable}
+        taskReviewRailVisible={taskReviewRailVisible}
+        onToggleTaskReviewRail={onToggleTaskReviewRail}
+      />
       <div className={`uniwork-body${taskReviewRailVisible ? "" : " uniwork-body--review-hidden"}`}>
         <main className="uniwork-transcript-pane" aria-label={t("uniwork.home.label")}>
           {transcriptSlot}
