@@ -17,10 +17,13 @@ import (
 
 const (
 	univerPreviewCommandEnv   = "REASONIX_UNIVER_PREVIEW_COMMAND"
+	univerExecutableEnv       = "REASONIX_UNIVER_EXECUTABLE"
 	univerPreviewTimeoutEnv   = "REASONIX_UNIVER_PREVIEW_TIMEOUT_MS"
 	defaultUniverPreviewMsec  = 20_000
 	univerPreviewOutputMaxLen = 2_000
 )
+
+var univerExecutableCandidates = defaultUniverExecutableCandidates
 
 // UniverPreviewResult is the desktop bridge payload for Live Univer Preview.
 // It intentionally omits the target path: the frontend already knows the
@@ -265,9 +268,51 @@ func runUniverPreviewExec(ctx context.Context, args []string) ([]byte, error) {
 	if len(args) == 0 {
 		return nil, errors.New("preview command is empty")
 	}
-	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
+	cmd := exec.CommandContext(ctx, resolveUniverExecutable(args[0]), args[1:]...)
 	cmd.Env = os.Environ()
 	return cmd.CombinedOutput()
+}
+
+func resolveUniverExecutable(name string) string {
+	if name != "univer" {
+		return name
+	}
+	if override := strings.TrimSpace(os.Getenv(univerExecutableEnv)); override != "" {
+		return override
+	}
+	if found, err := exec.LookPath(name); err == nil && strings.TrimSpace(found) != "" {
+		return found
+	}
+	for _, candidate := range univerExecutableCandidates() {
+		if executableFile(candidate) {
+			return candidate
+		}
+	}
+	return name
+}
+
+func defaultUniverExecutableCandidates() []string {
+	candidates := []string{
+		"/private/tmp/reasonix-univer-bin/univer",
+		"/opt/homebrew/bin/univer",
+		"/usr/local/bin/univer",
+	}
+	if home, err := os.UserHomeDir(); err == nil && strings.TrimSpace(home) != "" {
+		candidates = append(candidates,
+			filepath.Join(home, "Library", "pnpm", "univer"),
+			filepath.Join(home, ".local", "bin", "univer"),
+			filepath.Join(home, ".bun", "bin", "univer"),
+		)
+	}
+	return candidates
+}
+
+func executableFile(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil || info.IsDir() {
+		return false
+	}
+	return info.Mode()&0o111 != 0
 }
 
 func (m *univerPreviewManager) close() {

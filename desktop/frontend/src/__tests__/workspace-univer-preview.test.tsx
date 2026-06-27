@@ -369,6 +369,75 @@ console.log("\nworkspace Univer preview");
 
 {
   const dom = installDom();
+  window.go = {
+    main: {
+      App: {
+        ListDir: async () => [{ name: "watch.univer", isDir: false }],
+        SearchFileRefs: async () => [],
+        ReadFile: async (path: string) => ({ path, body: "", size: 0, truncated: false, binary: false }),
+        LiveUniverPreview: async () => ({ ok: true, url: "http://127.0.0.1:5173/uf/watch" }),
+        WorkspaceChanges: async () => ({ files: [], gitAvailable: true }),
+        WorkspaceGitHistory: async () => [],
+      } as Partial<AppBindings> as AppBindings,
+    },
+  };
+
+  const rootEl = document.getElementById("root");
+  if (!rootEl) throw new Error("missing root");
+  const root = createRoot(rootEl);
+
+  await act(async () => {
+    root.render(
+      <LocaleProvider>
+        <WorkspacePanel
+          open
+          tabId="tab-same-target-signal"
+          cwd="/repo"
+          maximized={false}
+          agentPreviewPathRequest={{ id: 1, path: "watch.univer" }}
+          onClose={() => {}}
+          onToggleMaximized={() => {}}
+        />
+      </LocaleProvider>,
+    );
+    await flushPromises();
+  });
+  await waitFor("same-target initial Univer iframe", () =>
+    document.querySelector(".workspace-univer-preview__frame")?.getAttribute("src") === "http://127.0.0.1:5173/uf/watch",
+  );
+
+  await act(async () => {
+    root.render(
+      <LocaleProvider>
+        <WorkspacePanel
+          open
+          tabId="tab-same-target-signal"
+          cwd="/repo"
+          maximized={false}
+          agentPreviewPathRequest={{ id: 2, path: "watch.univer" }}
+          onClose={() => {}}
+          onToggleMaximized={() => {}}
+        />
+      </LocaleProvider>,
+    );
+    await flushPromises();
+  });
+
+  eq(
+    document.querySelector(".workspace-univer-preview__frame")?.getAttribute("src"),
+    "http://127.0.0.1:5173/uf/watch",
+    "same .univer agent signal keeps the existing iframe visible",
+  );
+  ok(!document.querySelector(".workspace-univer-preview__failure"), "same .univer agent signal does not show preview failure");
+
+  await act(async () => {
+    root.unmount();
+  });
+  dom.window.close();
+}
+
+{
+  const dom = installDom();
   let livePreviewCalls = 0;
   window.go = {
     main: {

@@ -610,6 +610,17 @@ export function WorkspacePanel({
     if (lastAgentPreviewRequestIdRef.current === agentPreviewPathRequest.id && selectedPath === path) return;
     if (explicitUniverTarget && explicitUniverTarget !== path) return;
     lastAgentPreviewRequestIdRef.current = agentPreviewPathRequest.id;
+    if (selectedPath === path) {
+      setViewMode("files");
+      setTreeVisible(true);
+      setScopedFilePaths(null);
+      setScopedChangeRows(null);
+      setExpandedCommit(null);
+      setCommitDetail(null);
+      setSelectionMenu(null);
+      setTreeMenu(null);
+      return;
+    }
     setViewMode("files");
     setTreeVisible(true);
     setScopedFilePaths(null);

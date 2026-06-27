@@ -47,6 +47,39 @@ func TestUniverPreviewCommandArgsOverrideAppendsFileContract(t *testing.T) {
 	}
 }
 
+func TestResolveUniverExecutableUsesExplicitOverride(t *testing.T) {
+	override := filepath.Join(t.TempDir(), "custom-univer")
+	t.Setenv(univerExecutableEnv, override)
+
+	if got := resolveUniverExecutable("univer"); got != override {
+		t.Fatalf("resolved univer = %q, want override %q", got, override)
+	}
+	if got := resolveUniverExecutable("node"); got != "node" {
+		t.Fatalf("resolved non-univer = %q, want node", got)
+	}
+}
+
+func TestResolveUniverExecutableFallsBackToCandidateWhenPathIsMinimal(t *testing.T) {
+	dir := t.TempDir()
+	candidate := filepath.Join(dir, "univer")
+	if err := os.WriteFile(candidate, []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	emptyPath := filepath.Join(dir, "empty-path")
+	if err := os.Mkdir(emptyPath, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", emptyPath)
+	t.Setenv(univerExecutableEnv, "")
+	oldCandidates := univerExecutableCandidates
+	univerExecutableCandidates = func() []string { return []string{candidate} }
+	t.Cleanup(func() { univerExecutableCandidates = oldCandidates })
+
+	if got := resolveUniverExecutable("univer"); got != candidate {
+		t.Fatalf("resolved univer = %q, want fallback candidate %q", got, candidate)
+	}
+}
+
 func TestRunUniverPreviewUsesOverrideCommand(t *testing.T) {
 	absPath := filepath.Join(t.TempDir(), "book.univer")
 	t.Setenv(univerPreviewCommandEnv, `"`+os.Args[0]+`" -test.run=TestUniverPreviewCommandHelper -- {file}`)
