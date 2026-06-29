@@ -37,7 +37,7 @@ A non-visual hook, state helper, or behavior primitive exported by the Uniwork P
 _Avoid_: fixed UI component, Reasonix-specific widget
 
 **Uniwork Shell**:
-The Reasonix-owned transcript-first desktop layout around Uniwork Components, including mode chrome, workspace focus, agent transcript, process status, commands, and recovery UI.
+The Reasonix-owned transcript-first desktop layout around Uniwork Components, including mode chrome, workspace focus, agent transcript, process status, commands, and recovery UI. Switching tasks restores the selected task's transcript first; preview and worktree views are task context, not the primary task switch target.
 _Avoid_: Univer work surface, embedded editor
 
 **Workspace Activity**:
@@ -61,12 +61,44 @@ A user-facing route from Code Activity or workspace navigation into Uniwork Acti
 _Avoid_: Code preview, inline spreadsheet viewer
 
 **Uniwork Session**:
-A Reasonix session whose persisted kind restores the Uniwork Shell when opened from recents or tabs.
+A Reasonix session whose persisted kind restores the Uniwork Shell when opened from recents or tabs. In the Uniwork project tree, a Uniwork Session is presented to users as a Uniwork Task.
 _Avoid_: normal code session, temporary preview
 
+**Uniwork Task**:
+A user-visible work item in Uniwork Mode. It owns the task intent, transcript, optional target/worktree context, review state, and user-facing lifecycle; a task can start without a target but needs one before entering worktree review.
+_Avoid_: agent run, queue item, chat message
+
+**Uniwork Task Lifecycle**:
+The user-visible state model for a Uniwork Task, such as running, needs review, conflicted, merged, discarded, or failed. It may be derived from Gateway Worktree State but does not expose raw gateway lifecycle names directly.
+_Avoid_: gateway status, agent process state, session state
+
+**Uniwork Agent Run**:
+A concrete execution attempt under a Uniwork Task. A task may have one primary run plus retries, branches, or helper runs without changing the user's visible task identity.
+_Avoid_: task, session, worktree
+
+**Uniwork Project Tree**:
+The Uniwork Shell navigation surface where Uniwork Sessions are presented as user-visible tasks alongside project grouping and target context.
+_Avoid_: agent queue, file browser only, session debug list
+
+**Uniwork Task Queue**:
+The task list shown inside the Uniwork Project Tree. It presents Uniwork Task lifecycle state first, with Agent Run details only as lightweight hints or drill-down context.
+_Avoid_: agent process list, run queue, transcript history
+
+**Uniwork Project Bar**:
+The immersive Uniwork Shell bar for project-level and target-level orientation, such as current project, current target, target navigation, and low-key gateway or sync health.
+_Avoid_: task review rail, merge toolbar, agent detail panel
+
+**Uniwork Target Navigator**:
+A compact project-bar control that opens a popover for browsing the current Uniwork Target's files, units, or relevant document structure.
+_Avoid_: always-visible file tree, task queue, full sidebar
+
+**Uniwork Task Review Rail**:
+The right-side Uniwork Shell panel for the selected task's review state, including changed units, preview mode, readiness, conflicts, merge, and discard. It appears only when the selected task has reviewable worktree or preview state; changed units act as review summaries and quick jumps, not as a full target navigator.
+_Avoid_: project status panel, agent queue, file navigator
+
 **Uniwork Block**:
-A serializable transcript block that records a Uniwork target, worktree, preview, command result, or related Univer-aware state for later rendering.
-_Avoid_: React component state, ad hoc markdown
+A serializable transcript block that records task-relevant Uniwork events such as target selection, worktree creation, preview readiness, command result, approval, merge, discard, conflict, or verification failure.
+_Avoid_: React component state, project status log, ad hoc markdown
 
 **Authoritative Uniwork Block**:
 A Uniwork Block created by the host from real Univer tooling, daemon, target, or worktree state.
@@ -119,6 +151,10 @@ _Avoid_: host bridge, desktop proxy
 **Uniwork Target**:
 The host-provided object that identifies the Univerfile and current Uniwork context shown by a Uniwork Surface, including host-defined display or source path, display identity, view selection, gateway endpoint, health, and supported host capabilities.
 _Avoid_: iframe URL, package-owned file handle
+
+**Uniwork Active Target**:
+The target shown by the Uniwork Project Bar for the current user context. It is project-wide by default, inherited by new tasks, overridden by the selected task's bound target when a task is active, and represented by a select-target affordance when no target is available.
+_Avoid_: global file, preview target, selected unit
 
 **Uniwork View Ref**:
 A host or Univer tooling supplied render scope for a Uniwork Target, such as trunk, a Collab Gateway worktree, or a merge preview for a selected unit.

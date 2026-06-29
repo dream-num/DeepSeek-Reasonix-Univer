@@ -219,6 +219,78 @@ Reasonix Desktop SHALL organize the Uniwork shell information architecture aroun
 - **THEN** Reasonix Desktop provides a review surface that summarizes what changed, what needs attention, and the available next actions
 - **AND** it offers safe actions such as apply draft, keep editing, or discard draft according to reported capabilities
 
+### Requirement: Separate project orientation from task review
+
+Reasonix Desktop SHALL separate project-level orientation from selected-task review in the Uniwork shell.
+
+#### Scenario: Project bar is shown
+
+- **WHEN** Uniwork activity is active
+- **THEN** Reasonix Desktop displays a project-level bar for current project, active target, target navigation, and low-key gateway or sync health
+- **AND** the project bar does not contain task queue controls, task review controls, merge actions, or discard actions
+
+#### Scenario: Task review rail is shown
+
+- **WHEN** the selected Uniwork task has reviewable worktree or merge-preview state
+- **THEN** Reasonix Desktop displays a task review rail for that selected task
+- **AND** the rail contains selected-task review information such as changed units, preview mode, readiness, conflicts, merge, or discard
+- **AND** the rail does not contain project file navigation, project status management, or the task queue
+
+#### Scenario: Task has no reviewable state
+
+- **WHEN** the selected Uniwork task has no reviewable worktree or merge-preview state
+- **THEN** Reasonix Desktop hides the task review rail
+- **AND** the transcript and composer remain visually aligned as the primary task surface
+
+### Requirement: Present Uniwork sessions as tasks
+
+Reasonix Desktop SHALL present Uniwork sessions as user-visible tasks inside the Uniwork project tree.
+
+#### Scenario: Project tree shows Uniwork tasks
+
+- **WHEN** Uniwork activity is active and persisted Uniwork sessions are available
+- **THEN** Reasonix Desktop presents those sessions as Uniwork tasks in the project tree
+- **AND** each task prioritizes user-visible task lifecycle state over raw session or agent-run metadata
+
+#### Scenario: Agent run state exists under a task
+
+- **WHEN** a Uniwork task has an active, retried, branched, or helper agent run
+- **THEN** Reasonix Desktop keeps the task as the primary navigation object
+- **AND** agent-run detail is shown only as a lightweight hint, drill-down detail, or transcript process context
+
+#### Scenario: User switches tasks
+
+- **WHEN** the user selects a different Uniwork task from the project tree
+- **THEN** Reasonix Desktop restores that task's transcript first
+- **AND** any preview or worktree view is treated as task context rather than replacing the transcript as the primary switch target
+
+### Requirement: Maintain active target context
+
+Reasonix Desktop SHALL maintain a Uniwork active target context across project-level and task-level navigation.
+
+#### Scenario: New task is created with a project active target
+
+- **WHEN** the user creates a new Uniwork task while the project has an active target
+- **THEN** Reasonix Desktop initializes the task with that active target
+
+#### Scenario: Selected task has a bound target
+
+- **WHEN** the user selects a Uniwork task that has a bound target
+- **THEN** the Uniwork project bar displays that task's target as the active target
+- **AND** the transcript does not appear to be working on a different target
+
+#### Scenario: No target is available
+
+- **WHEN** neither the project nor the selected task has an active target
+- **THEN** the Uniwork project bar displays a select-target affordance
+- **AND** Reasonix Desktop does not fabricate a target for the task
+
+#### Scenario: Target navigator is opened
+
+- **WHEN** the user opens target navigation from the Uniwork project bar
+- **THEN** Reasonix Desktop opens a popover for browsing the current target's files, units, or relevant document structure
+- **AND** it does not show a second always-visible file tree in the project bar
+
 ### Requirement: Apply Uniwork visual hierarchy consistently
 
 Reasonix Desktop SHALL prioritize Uniwork UI information by office decision value before implementation detail.

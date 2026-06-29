@@ -6,7 +6,7 @@ import { Archive, ArrowDown, Pencil, Plus, Folder, FolderPlus, Search, Briefcase
 import { asArray } from "../lib/array";
 import { useToast } from "../lib/toast";
 import { app } from "../lib/bridge";
-import type { ProjectNode, ProjectTopicStatus } from "../lib/types";
+import type { ProjectNode } from "../lib/types";
 import { topicActivityTime } from "../lib/session";
 import { getLocale, useT, type DictKey, type Translator } from "../lib/i18n";
 import { PROJECT_COLOR_OPTIONS, projectColorValue } from "../lib/projectColors";
@@ -131,30 +131,42 @@ function topicMetaLine(node: ProjectNode, t: Translator, compact = false): strin
   return parts.join(" · ");
 }
 
-const topicStatusLabels: Record<ProjectTopicStatus, DictKey> = {
-  thinking: "uniwork.projectTree.status.thinking",
-  streaming: "uniwork.projectTree.status.streaming",
-  waiting_confirmation: "uniwork.projectTree.status.waitingConfirmation",
-  background_job: "uniwork.projectTree.status.backgroundJob",
-  paused: "uniwork.projectTree.status.paused",
-  error: "uniwork.projectTree.status.error",
+type UniworkTaskLifecycle = "running" | "needs_review" | "conflicted" | "merged" | "discarded" | "failed";
+
+const taskLifecycleLabels: Record<UniworkTaskLifecycle, DictKey> = {
+  running: "uniwork.projectTree.lifecycle.running",
+  needs_review: "uniwork.projectTree.lifecycle.needsReview",
+  conflicted: "uniwork.projectTree.lifecycle.conflicted",
+  merged: "uniwork.projectTree.lifecycle.merged",
+  discarded: "uniwork.projectTree.lifecycle.discarded",
+  failed: "uniwork.projectTree.lifecycle.failed",
 };
 
-function normalizeTopicStatus(status?: string): ProjectTopicStatus | "" {
+function normalizeTaskLifecycle(status?: string): UniworkTaskLifecycle | "" {
   if (!status) return "";
-  if (status === "thinking" || status === "streaming" || status === "waiting_confirmation" || status === "background_job" || status === "paused" || status === "error") {
+  if (status === "thinking" || status === "streaming" || status === "background_job" || status === "running") {
+    return "running";
+  }
+  if (status === "waiting_confirmation" || status === "needs_review") {
+    return "needs_review";
+  }
+  if (status === "paused" || status === "conflicted") {
+    return "conflicted";
+  }
+  if (status === "merged" || status === "discarded" || status === "failed") {
     return status;
   }
+  if (status === "error") return "failed";
   return "";
 }
 
-function topicStatus(node: ProjectNode): ProjectTopicStatus | "" {
-  return normalizeTopicStatus(node.status) || (node.running ? "streaming" : "");
+function topicStatus(node: ProjectNode): UniworkTaskLifecycle | "" {
+  return normalizeTaskLifecycle(node.status) || (node.running ? "running" : "");
 }
 
 function topicStatusLabel(node: ProjectNode, t: Translator): string {
   const status = topicStatus(node);
-  return status ? t(topicStatusLabels[status]) : "";
+  return status ? t(taskLifecycleLabels[status]) : "";
 }
 
 function topicActivityLabel(ms: number, t: Translator, compact = false): string {
@@ -435,12 +447,14 @@ function buildUniworkDemoProjectTree(t: Translator, now: number, running: boolea
         uniworkDemoTopic("uniwork_topic_monthly_report", `● ${t("mock.uniworkTopicMonthlyReport")}`, "~/office/finance-suite", "green", 16, now - 11 * 60_000, {
           open: true,
           running,
-          status: running ? "streaming" : undefined,
+          status: running ? "running" : "needs_review",
         }),
         uniworkDemoTopic("uniwork_topic_budget_variance", t("mock.uniworkTopicBudgetVariance"), "~/office/finance-suite", "green", 11, now - 2 * 60 * 60_000, {
-          status: running ? "thinking" : undefined,
+          status: running ? "running" : "conflicted",
         }),
-        uniworkDemoTopic("uniwork_topic_sales_forecast", t("mock.uniworkTopicSalesForecast"), "~/office/finance-suite", "green", 11, now - 25 * 60 * 60_000),
+        uniworkDemoTopic("uniwork_topic_sales_forecast", t("mock.uniworkTopicSalesForecast"), "~/office/finance-suite", "green", 11, now - 25 * 60 * 60_000, {
+          status: "merged",
+        }),
       ],
     },
     {
@@ -452,10 +466,10 @@ function buildUniworkDemoProjectTree(t: Translator, now: number, running: boolea
       children: [
         uniworkDemoTopic("uniwork_topic_contract_register", t("mock.uniworkTopicContractRegister"), "~/office/operations", "amber", 12, now - 3 * 24 * 60 * 60_000),
         uniworkDemoTopic("uniwork_topic_okr_weekly", t("mock.uniworkTopicOkrWeekly"), "~/office/operations", "amber", 11, now - 4 * 24 * 60 * 60_000, {
-          status: "waiting_confirmation",
+          status: "needs_review",
         }),
         uniworkDemoTopic("uniwork_topic_review_packets", t("mock.uniworkTopicReviewPackets"), "~/office/operations", "amber", 11, now - 5 * 24 * 60 * 60_000, {
-          status: "paused",
+          status: "discarded",
         }),
       ],
     },
@@ -468,10 +482,10 @@ function buildUniworkDemoProjectTree(t: Translator, now: number, running: boolea
       children: [
         uniworkDemoTopic("uniwork_topic_cli_import", t("mock.uniworkTopicCliImport"), "~/tools/univer-cli", "blue", 10, now - 6 * 24 * 60 * 60_000),
         uniworkDemoTopic("uniwork_topic_cli_merge_preview", t("mock.uniworkTopicCliMergePreview"), "~/tools/univer-cli", "blue", 11, now - 7 * 24 * 60 * 60_000, {
-          status: "background_job",
+          status: "running",
         }),
         uniworkDemoTopic("uniwork_topic_cli_sidecar", t("mock.uniworkTopicCliSidecar"), "~/tools/univer-cli", "blue", 11, now - 8 * 24 * 60 * 60_000, {
-          status: "error",
+          status: "failed",
         }),
       ],
     },
@@ -1121,7 +1135,7 @@ export function UniworkProjectTree({
       const meta = topicMetaLine(node, t, compactTopics);
       const status = topicStatus(node);
       const statusLabel = topicStatusLabel(node, t);
-      const showStatusInSide = status === "thinking" || status === "streaming" || status === "waiting_confirmation" || status === "background_job";
+      const showStatusInSide = Boolean(status);
       const topicId = node.topicId ?? "";
       const imSource = scope === "global" && topicId ? imTopicSources[topicId] : undefined;
       const imSourceLabel = imSource?.label || "";
