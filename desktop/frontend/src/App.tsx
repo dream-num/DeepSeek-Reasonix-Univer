@@ -36,9 +36,12 @@ import { clearLegacyLangPref, normalizeLangPref, readLegacyLangPref, useI18n, us
 import { useController, type Item, type LiveStream } from "./lib/useController";
 import { app, onEvent, onProjectTreeChanged } from "./lib/bridge";
 import { generativeMusic, isGenerativeMusicEnabled } from "./lib/generative-music";
+import { inferUniverPreviewSignal } from "./lib/univerPreviewSignal";
 import { playSuccessChime } from "./lib/sound";
 import { Transcript } from "./components/Transcript";
+import { UniworkTranscript, hasUniworkMockScenario } from "./components/UniworkTranscript";
 import { Composer } from "./components/Composer";
+import { UniworkComposer } from "./components/UniworkComposer";
 import { TodoPanel } from "./components/TodoPanel";
 import { ApprovalModal } from "./components/ApprovalModal";
 import { AskCard } from "./components/AskCard";
@@ -49,6 +52,8 @@ import { CommandPalette, type PaletteItem } from "./components/CommandPalette";
 import { UpdateBanner } from "./components/UpdateBanner";
 import { ContextPanel } from "./components/ContextPanel";
 import { WorkspacePanel } from "./components/WorkspacePanel";
+import { UniworkActivitySwitch, UniworkMode, UniworkSidebar, type WorkspaceActivity } from "./components/UniworkMode";
+import { UniworkProjectTree } from "./components/UniworkProjectTree";
 import { Tooltip } from "./components/Tooltip";
 import { StartupSplash } from "./components/StartupSplash";
 import { OnboardingOverlay } from "./components/OnboardingOverlay";
@@ -182,6 +187,7 @@ function normalizeDesktopLayoutStyle(style: string | undefined): DesktopLayoutSt
 }
 const SHOW_CONTEXT_DOCK = true;
 type HistoryScopeFilter = { scope: "global" | "project"; workspaceRoot: string };
+type WorkspacePathRequest = { id: number; path: string };
 type DesktopPlatform = "darwin" | "windows" | "linux";
 type HistoryViewState =
   | { kind: "history"; source: "scope"; filter: HistoryScopeFilter; sessions: SessionMeta[] }
@@ -837,6 +843,7 @@ export default function App() {
   const [tabOrderIds, setTabOrderIds] = useState<string[]>([]);
   const [tabRevealSignal, setTabRevealSignal] = useState(0);
   const [transcriptRevealSignal, setTranscriptRevealSignal] = useState(0);
+  const [workspaceActivity, setWorkspaceActivity] = useState<WorkspaceActivity>("code");
   const startupSplashVisible = useOverlayStore((s) => s.startupSplashVisible);
   const setStartupSplashVisible = useOverlayStore((s) => s.setStartupSplashVisible);
   // null until the mount probe resolves; true shows the overlay. Probed once —
@@ -908,6 +915,7 @@ export default function App() {
   const rightDockMode = useLayoutStore((s) => s.rightDockMode);
   const setRightDockMode = useLayoutStore((s) => s.setRightDockMode);
   const [dockRefreshKey, setDockRefreshKey] = useState(0);
+  const [agentUniverPreviewRequest, setAgentUniverPreviewRequest] = useState<WorkspacePathRequest | null>(null);
   const [projectRevision, setProjectRevision] = useState(0);
   const [activeTopicTurns, setActiveTopicTurns] = useState<number | undefined>(undefined);
   const [composerInsertRequest, setComposerInsertRequest] = useState<ComposerInsertRequest | null>(null);
@@ -933,6 +941,7 @@ export default function App() {
   const layoutRef = useRef<HTMLDivElement>(null);
   const sidebarTogglePressTimerRef = useRef<number | null>(null);
   const workspaceTogglePressTimerRef = useRef<number | null>(null);
+  const lastAgentUniverPreviewSignalIdRef = useRef("");
 
   // Persist window geometry across launches.
   useWindowStatePersistence();
@@ -944,6 +953,16 @@ export default function App() {
   const closeTransientOverlays = useCallback(() => {
     setTransientOverlayDismissSignal((signal) => signal + 1);
   }, []);
+  const uniworkActive = workspaceActivity === "uniwork";
+  const applyWorkspaceActivity = useCallback((activity: WorkspaceActivity) => {
+    closeTransientOverlays();
+    setWorkspaceActivity(activity);
+    if (activity === "uniwork") {
+      setLiveWorkspacePanelRenderWidth(null);
+      setWorkspacePanelMaximized(false);
+      setWorkspacePanelOpen(false);
+    }
+  }, [closeTransientOverlays, setWorkspacePanelMaximized, setWorkspacePanelOpen]);
 
   const reloadSidebarImConnections = useCallback(async () => {
     const [settings, runtimeStatus] = await Promise.all([
@@ -1982,6 +2001,22 @@ export default function App() {
     [openWorkspacePanel],
   );
 
+  const inferredUniverPreviewSignal = useMemo(
+    () => inferUniverPreviewSignal(state.items),
+    [state.items],
+  );
+
+  useEffect(() => {
+    if (!inferredUniverPreviewSignal) return;
+    if (lastAgentUniverPreviewSignalIdRef.current === inferredUniverPreviewSignal.id) return;
+    lastAgentUniverPreviewSignalIdRef.current = inferredUniverPreviewSignal.id;
+    setAgentUniverPreviewRequest((prev) => ({
+      id: (prev?.id ?? 0) + 1,
+      path: inferredUniverPreviewSignal.path,
+    }));
+    openRightDockMode("files");
+  }, [inferredUniverPreviewSignal, openRightDockMode]);
+
   const handleWorkspacePreviewModeChange = useCallback(
     (active: boolean) => {
       if (workspacePreviewActive === active) return;
@@ -2624,6 +2659,260 @@ export default function App() {
     sidebarCollapsed ? "sidebar--collapsed" : "",
     sidebarWorkbench ? "sidebar--workbench" : "",
   ].filter(Boolean).join(" ");
+  const composerDisabled = rewindCommitting || state.messageAction != null || state.approval != null || state.ask != null || clearContextPending;
+  const footerInterventions = (
+    <>
+      {showTodos && <TodoPanel todos={todos} onDismiss={() => setDismissedTodo(todoKey)} />}
+      {rewindState && (
+        <UndoRewindBanner
+          meta={{
+            turns: rewindState.turnDiff,
+            filesRestored: [], // optimistic: files haven't changed yet
+            filesRemoved: [],
+            onUndo: () => {
+              setRewindState(null);
+              setComposerInsertRequest({ id: Date.now(), text: "", mode: "replace" });
+            },
+          }}
+        />
+      )}
+      {state.approval && (
+        <ApprovalModal
+          key={state.approval.id}
+          approval={state.approval}
+          onAnswer={async (allow, session, persist) => {
+            // Approving an exit_plan_mode plan leaves plan mode; await the
+            // mode switch before sending the approval so the controller
+            // observes the updated state before it unblocks.
+            if (state.approval!.tool === "exit_plan_mode" && allow) await applyCollaborationMode("normal", { rememberUserIntent: false });
+            approve(state.approval!.id, allow, session, persist);
+          }}
+          onRevisePlan={(text) => {
+            setPendingPlanRevision(text);
+            approve(state.approval!.id, false, false, false);
+          }}
+          onExitPlan={async () => {
+            await applyCollaborationMode("normal");
+            approve(state.approval!.id, false, false, false);
+          }}
+          onStop={() => {
+            cancel();
+          }}
+        />
+      )}
+      {state.ask && (
+        <AskCard
+          ask={state.ask}
+          onAnswer={answerQuestion}
+          onDismiss={() => answerQuestion(state.ask!.id, [])}
+          onStop={() => {
+            cancel();
+          }}
+        />
+      )}
+      {clearContextPending && (
+        <ClearContextCard
+          onCancel={cancelClearContext}
+          onConfirm={() => {
+            void confirmClearContext();
+          }}
+        />
+      )}
+    </>
+  );
+  const agentFooter = sidebarImDetailConnection ? null : (
+    <footer className="footer" ref={footerRef}>
+      {footerInterventions}
+      <Composer
+        running={state.running || rewindCommitting}
+        collaborationMode={collaborationMode}
+        toolApprovalMode={toolApprovalMode}
+        tokenMode={tokenMode}
+        goal={goal}
+        cwd={state.meta?.cwd}
+        modelLabel={state.meta?.label ?? t("status.connecting")}
+        tabId={activeTabId}
+        effort={state.effort}
+        onSend={handleSend}
+        onCancel={cancel}
+        onCycleMode={cycleMode}
+        onSetMode={applyMode}
+        onSetCollaborationMode={applyCollaborationMode}
+        onSetToolApprovalMode={applyToolApprovalMode}
+        onToggleYoloApprovalMode={toggleYoloApprovalMode}
+        onClearGoal={() => applyGoal("")}
+        onSwitchModel={switchModel}
+        onSetEffort={setEffort}
+        onSetTokenMode={applyTokenMode}
+        insertRequest={composerInsertRequest}
+        readOnly={Boolean(activeTab?.readOnly)}
+        disabled={composerDisabled}
+        submitDisabled={!controllerReady}
+        decisionPending={composerDisabled}
+        ready={controllerReady}
+        turnStartAt={state.turnStartAt}
+        turnTokens={state.turnTokens}
+        retry={state.retry}
+        transientDismissSignal={transientOverlayDismissSignal}
+        sessionKey={composerSessionKey}
+      />
+      <StatusBar
+        context={state.context}
+        usage={state.usage}
+        balance={state.balance}
+        jobs={state.jobs}
+        running={state.running || rewindCommitting}
+        collaborationMode={collaborationMode}
+        toolApprovalMode={toolApprovalMode}
+        sessionTurns={sessionTurns}
+        sessionTokens={state.sessionTokens}
+        turnTokens={state.turnTotalTokens}
+        turnCost={state.turnCost}
+        cost={state.sessionCost}
+        currency={state.sessionCurrency}
+        modelLabel={state.meta?.label}
+        labelStyle={statusBarStyle}
+        items={statusBarItems}
+        workspacePath={state.meta?.workspacePath || state.meta?.workspaceRoot || state.meta?.cwd}
+        workspaceName={state.meta?.workspaceName}
+        gitBranch={state.meta?.gitBranch}
+        hydrationLabel={hydrateStatusLabel}
+      />
+    </footer>
+  );
+  const uniworkFooter = sidebarImDetailConnection ? null : (
+    <footer className="footer footer--uniwork" ref={footerRef}>
+      {footerInterventions}
+      <UniworkComposer
+        running={state.running || rewindCommitting}
+        collaborationMode={collaborationMode}
+        toolApprovalMode={toolApprovalMode}
+        tokenMode={tokenMode}
+        goal={goal}
+        cwd={state.meta?.cwd}
+        context={state.context}
+        usage={state.usage}
+        balance={state.balance}
+        jobs={state.jobs}
+        sessionTurns={sessionTurns}
+        sessionTokens={state.sessionTokens}
+        statusTurnTokens={state.turnTotalTokens}
+        turnCost={state.turnCost}
+        cost={state.sessionCost}
+        currency={state.sessionCurrency}
+        modelLabel={state.meta?.label ?? t("status.connecting")}
+        tabId={activeTabId}
+        effort={state.effort}
+        onSend={handleSend}
+        onCancel={cancel}
+        onCycleMode={cycleMode}
+        onSetCollaborationMode={applyCollaborationMode}
+        onSetToolApprovalMode={applyToolApprovalMode}
+        onToggleYoloApprovalMode={toggleYoloApprovalMode}
+        onClearGoal={() => applyGoal("")}
+        onSwitchModel={switchModel}
+        onSetEffort={setEffort}
+        onSetTokenMode={applyTokenMode}
+        insertRequest={composerInsertRequest}
+        readOnly={Boolean(activeTab?.readOnly)}
+        disabled={composerDisabled}
+        submitDisabled={!controllerReady}
+        decisionPending={composerDisabled}
+        ready={controllerReady}
+        turnStartAt={state.turnStartAt}
+        turnTokens={state.turnTokens}
+        retry={state.retry}
+        transientDismissSignal={transientOverlayDismissSignal}
+        sessionKey={composerSessionKey}
+        workspaceName={state.meta?.workspaceName}
+        workspacePath={state.meta?.workspacePath || state.meta?.workspaceRoot || state.meta?.cwd}
+        hydrationLabel={hydrateStatusLabel}
+      />
+    </footer>
+  );
+  const uniworkTranscript = sidebarImDetailConnection ? null : (
+    <UniworkTranscript
+      items={displayItems}
+      live={state.live}
+      tabId={activeTabId}
+      footerHeight={footerHeight}
+      onPrompt={handleTranscriptPrompt}
+      onEditPrompt={handleEditPrompt}
+      onRewind={handleMessageAction}
+      checkpoints={state.checkpoints}
+      actionPending={state.messageAction != null}
+      rewindDisabled={Boolean(activeTab?.readOnly) || !controllerReady || hydratePlaceholderActive || rewindState != null || rewindCommitting || state.running || state.messageAction != null || state.approval != null || state.ask != null || clearContextPending}
+      running={state.running || rewindCommitting}
+      actionHoverMenus={!hydratePlaceholderActive}
+      rewindSignal={rewindSignal}
+      revealSignal={transcriptRevealSignal}
+      hydrating={transcriptHydrating}
+      mockTopicId={activeTab?.topicId}
+    />
+  );
+  const uniworkActionsRailVisible = !sidebarImDetailConnection && (
+    displayItems.length > 0 ||
+    transcriptHydrating ||
+    state.running ||
+    rewindCommitting ||
+    hasUniworkMockScenario(activeTab?.topicId)
+  );
+  const projectTreeSection = (
+    <section className="sidebar__section sidebar__section--projects">
+      <ProjectTree
+        activeScope={activeTab?.scope}
+        activeWorkspaceRoot={activeTab?.workspaceRoot}
+        activeTopicId={activeTab?.topicId}
+        activeSessionPath={activeTab?.sessionPath}
+        imTopicSources={imTopicSources}
+        onOpenTopic={handleOpenTopic}
+        onOpenProjectHistory={openProjectHistory}
+        onCreateTopic={(scope, workspaceRoot) => openBlankSession(scope, scope === "project" ? workspaceRoot : "")}
+        onTopicsChanged={refreshProjectsAndTabs}
+        onRenameTopic={renameTopic}
+        refreshSignal={projectRevision}
+        onAddProject={async () => {
+          await switchFolder();
+        }}
+        timeFilter={topicTimeFilter}
+        onTimeFilterChange={setTopicTimeFilter}
+        variant={sidebarWorkbench ? "workbench" : sidebarCreation ? "creation" : "classic"}
+        searchExpanded={!sidebarCreation || sidebarSearchOpen}
+        searchFocusSignal={sidebarSearchFocusSignal}
+        showShortcutBadges={showTopicBadges}
+        shortcutPlatform={desktopPlatform}
+        onVisibleTopicsChange={handleVisibleTopicsChange}
+      />
+    </section>
+  );
+  const uniworkProjectTreeSection = (
+    <section className="sidebar__section sidebar__section--projects">
+      <UniworkProjectTree
+        activeScope={activeTab?.scope}
+        activeWorkspaceRoot={activeTab?.workspaceRoot}
+        activeTopicId={activeTab?.topicId}
+        activeSessionPath={activeTab?.sessionPath}
+        imTopicSources={imTopicSources}
+        onOpenTopic={handleOpenTopic}
+        onOpenProjectHistory={openProjectHistory}
+        onCreateTopic={(scope, workspaceRoot) => openBlankSession(scope, scope === "project" ? workspaceRoot : "")}
+        onTopicsChanged={refreshProjectsAndTabs}
+        onRenameTopic={renameTopic}
+        refreshSignal={projectRevision}
+        onAddProject={async () => {
+          await switchFolder();
+        }}
+        timeFilter={topicTimeFilter}
+        onTimeFilterChange={setTopicTimeFilter}
+        variant="workbench"
+        searchExpanded={true}
+        searchFocusSignal={sidebarSearchFocusSignal}
+        showShortcutBadges={showTopicBadges}
+        shortcutPlatform={desktopPlatform}
+        onVisibleTopicsChange={handleVisibleTopicsChange}
+      />
+    </section>
+  );
 
   return (
     <ShellExpandProvider>
@@ -2637,6 +2926,7 @@ export default function App() {
         browserPreviewChrome ? "app--browser-preview" : "",
         sidebarWorkbench ? "app--workbench" : "",
         sidebarCreation ? "app--creation" : "",
+        uniworkActive ? "app--uniwork" : "",
       ].filter(Boolean).join(" ")}
     >
       <div
@@ -2648,8 +2938,8 @@ export default function App() {
           sidebarCreation ? "layout--creation-chrome-hidden" : "",
           sidebarCollapsed ? "layout--sidebar-collapsed" : "",
           sidebarResizing ? "layout--resizing layout--sidebar-resizing" : "",
-          workspacePanelGridOpen ? "layout--workspace-open" : "",
-          workspacePanelOpen && workspacePanelMaximized ? "layout--workspace-maximized" : "",
+          !uniworkActive && workspacePanelGridOpen ? "layout--workspace-open" : "",
+          !uniworkActive && workspacePanelOpen && workspacePanelMaximized ? "layout--workspace-maximized" : "",
           workspacePanelResizing ? "layout--resizing layout--workspace-resizing" : "",
         ]
           .filter(Boolean)
@@ -2669,10 +2959,10 @@ export default function App() {
             sidebarExpandBlocked={sidebarExpandBlocked}
             sidebarCollapsed={sidebarCollapsed}
             sidebarToggleTitle={sidebarToggleTitle}
-            workspacePanelMaximized={workspacePanelMaximized}
-            workspacePanelRenderable={workspacePanelRenderable}
+            workspacePanelMaximized={!uniworkActive && workspacePanelMaximized}
+            workspacePanelRenderable={!uniworkActive && workspacePanelRenderable}
             workspaceTogglePressed={workspaceTogglePressed}
-            workspacePanelLabel={workspacePanelRenderable ? t("rightDock.collapse") : t("rightDock.expand")}
+            workspacePanelLabel={!uniworkActive && workspacePanelRenderable ? t("rightDock.collapse") : t("rightDock.expand")}
             onToggleSidebar={toggleSidebar}
             onToggleWorkspacePanel={toggleWorkspacePanel}
             onTabChange={(id) => void handleTabChange(id)}
@@ -2688,6 +2978,12 @@ export default function App() {
         </a>
 
         <aside className={sidebarClassName} aria-label={t("sidebar.navigation")}>
+          <UniworkActivitySwitch activity={workspaceActivity} onActivityChange={applyWorkspaceActivity} />
+
+          {uniworkActive ? (
+            <UniworkSidebar projectTreeSlot={uniworkProjectTreeSection} />
+          ) : (
+            <>
           {sidebarWorkbench ? (
             <>
               <div className="sidebar__head" aria-hidden={sidebarCollapsed}>
@@ -2726,7 +3022,6 @@ export default function App() {
               </button>
             </>
           )}
-
           {sidebarCreation && (
             <section className="sidebar-feature-zone" aria-label={t("settings.title")}>
               <div className="sidebar-feature-zone__title">{t("creation.sidebar.features")}</div>
@@ -2776,32 +3071,7 @@ export default function App() {
             </section>
           )}
 
-          <section className="sidebar__section sidebar__section--projects">
-            <ProjectTree
-              activeScope={activeTab?.scope}
-              activeWorkspaceRoot={activeTab?.workspaceRoot}
-              activeTopicId={activeTab?.topicId}
-              activeSessionPath={activeTab?.sessionPath}
-              imTopicSources={imTopicSources}
-              onOpenTopic={handleOpenTopic}
-              onOpenProjectHistory={openProjectHistory}
-              onCreateTopic={(scope, workspaceRoot) => openBlankSession(scope, scope === "project" ? workspaceRoot : "")}
-              onTopicsChanged={refreshProjectsAndTabs}
-              onRenameTopic={renameTopic}
-              refreshSignal={projectRevision}
-              onAddProject={async () => {
-                await switchFolder();
-              }}
-              timeFilter={topicTimeFilter}
-              onTimeFilterChange={setTopicTimeFilter}
-              variant={sidebarWorkbench ? "workbench" : sidebarCreation ? "creation" : "classic"}
-              searchExpanded={!sidebarCreation || sidebarSearchOpen}
-              searchFocusSignal={sidebarSearchFocusSignal}
-              showShortcutBadges={showTopicBadges}
-              shortcutPlatform={desktopPlatform}
-              onVisibleTopicsChange={handleVisibleTopicsChange}
-            />
-          </section>
+          {projectTreeSection}
 
           {sidebarWorkbench ? (
             <nav className="sidebar__nav sidebar__nav--footer">
@@ -2913,6 +3183,8 @@ export default function App() {
               </Tooltip>
             </nav>
           )}
+            </>
+          )}
 
         </aside>
         <button
@@ -2941,7 +3213,14 @@ export default function App() {
           </button>
         )}
 
-        <section className={`chat-pane${sidebarCreation && !sessionHasContent ? " chat-pane--creation-empty" : ""}`}>
+        <section className={`chat-pane${sidebarCreation && !sessionHasContent ? " chat-pane--creation-empty" : ""}${uniworkActive ? " chat-pane--uniwork" : ""}`}>
+          {uniworkActive ? (
+            <UniworkMode
+              actionsRailVisible={uniworkActionsRailVisible}
+              transcriptSlot={uniworkTranscript}
+              composerSlot={uniworkFooter}
+            />
+          ) : (
           <>
           <header className="topicbar">
             {workbenchChromeHidden && (
@@ -3188,125 +3467,12 @@ export default function App() {
             )}
           </main>
 
-          {!sidebarImDetailConnection && (
-          <footer className="footer" ref={footerRef}>
-            {showTodos && <TodoPanel todos={todos} onDismiss={() => setDismissedTodo(todoKey)} />}
-            {rewindState && (
-              <UndoRewindBanner
-                meta={{
-                  turns: rewindState.turnDiff,
-                  filesRestored: [], // optimistic: files haven't changed yet
-                  filesRemoved: [],
-                  onUndo: () => {
-                    setRewindState(null);
-                    setComposerInsertRequest({ id: Date.now(), text: "", mode: "replace" });
-                  },
-                }}
-              />
-            )}
-            {state.approval && (
-              <ApprovalModal
-                key={state.approval.id}
-                approval={state.approval}
-                onAnswer={async (allow, session, persist) => {
-                  // Approving an exit_plan_mode plan leaves plan mode; await the
-                  // mode switch before sending the approval so the controller
-                  // observes the updated state before it unblocks.
-                  if (state.approval!.tool === "exit_plan_mode" && allow) await applyCollaborationMode("normal", { rememberUserIntent: false });
-                  approve(state.approval!.id, allow, session, persist);
-                }}
-                onRevisePlan={(text) => {
-                  setPendingPlanRevision(text);
-                  approve(state.approval!.id, false, false, false);
-                }}
-                onExitPlan={async () => {
-                  await applyCollaborationMode("normal");
-                  approve(state.approval!.id, false, false, false);
-                }}
-                onStop={() => {
-                  cancel();
-                }}
-              />
-            )}
-            {state.ask && (
-              <AskCard
-                ask={state.ask}
-                onAnswer={answerQuestion}
-                onDismiss={() => answerQuestion(state.ask!.id, [])}
-                onStop={() => {
-                  cancel();
-                }}
-              />
-            )}
-            {clearContextPending && (
-              <ClearContextCard
-                onCancel={cancelClearContext}
-                onConfirm={() => {
-                  void confirmClearContext();
-                }}
-              />
-            )}
-            <Composer
-              running={state.running || rewindCommitting}
-              collaborationMode={collaborationMode}
-              toolApprovalMode={toolApprovalMode}
-              tokenMode={tokenMode}
-              goal={goal}
-              cwd={state.meta?.cwd}
-              modelLabel={state.meta?.label ?? t("status.connecting")}
-              tabId={activeTabId}
-              effort={state.effort}
-              onSend={handleSend}
-              onCancel={cancel}
-              onCycleMode={cycleMode}
-              onSetMode={applyMode}
-              onSetCollaborationMode={applyCollaborationMode}
-              onSetToolApprovalMode={applyToolApprovalMode}
-              onToggleYoloApprovalMode={toggleYoloApprovalMode}
-              onClearGoal={() => applyGoal("")}
-              onSwitchModel={switchModel}
-              onSetEffort={setEffort}
-              onSetTokenMode={applyTokenMode}
-              insertRequest={composerInsertRequest}
-              readOnly={Boolean(activeTab?.readOnly)}
-              disabled={rewindCommitting || state.messageAction != null || state.approval != null || state.ask != null || clearContextPending}
-              submitDisabled={!controllerReady}
-              decisionPending={rewindCommitting || state.messageAction != null || state.approval != null || state.ask != null || clearContextPending}
-              ready={controllerReady}
-              turnStartAt={state.turnStartAt}
-              turnTokens={state.turnTokens}
-              retry={state.retry}
-              transientDismissSignal={transientOverlayDismissSignal}
-              sessionKey={composerSessionKey}
-            />
-            <StatusBar
-              context={state.context}
-              usage={state.usage}
-              balance={state.balance}
-              jobs={state.jobs}
-              running={state.running || rewindCommitting}
-              collaborationMode={collaborationMode}
-              toolApprovalMode={toolApprovalMode}
-              sessionTurns={sessionTurns}
-              sessionTokens={state.sessionTokens}
-              turnTokens={state.turnTotalTokens}
-              turnCost={state.turnCost}
-              cost={state.sessionCost}
-              currency={state.sessionCurrency}
-              modelLabel={state.meta?.label}
-              labelStyle={statusBarStyle}
-              items={statusBarItems}
-              workspacePath={state.meta?.workspacePath || state.meta?.workspaceRoot || state.meta?.cwd}
-              workspaceName={state.meta?.workspaceName}
-              gitBranch={state.meta?.gitBranch}
-              hydrationLabel={hydrateStatusLabel}
-            />
-          </footer>
-          )}
+          {agentFooter}
           </>
+          )}
         </section>
 
-        {workspacePanelGridOpen && (
+        {!uniworkActive && workspacePanelGridOpen && (
           <button
             className="workspace-panel-resizer"
             type="button"
@@ -3322,7 +3488,7 @@ export default function App() {
           />
         )}
 
-        {workspacePanelRenderable && (
+        {!uniworkActive && workspacePanelRenderable && (
           <aside
             className={[
               "workbench-dock",
@@ -3399,6 +3565,7 @@ export default function App() {
                   onRequestPanelWidth={ensureWorkspacePanelWidth}
                   refreshKey={dockRefreshKey}
                   initialViewMode={rightDockMode === "changed" ? "changed" : "files"}
+                  agentPreviewPathRequest={agentUniverPreviewRequest}
                   showViewTabs={false}
                 />
               )}

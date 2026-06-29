@@ -494,21 +494,31 @@ func (r *Runtime) StartTurn(ctx context.Context, input string, _ []provider.Mess
 	goal := summarizeGoal(stripReferencedContext(input))
 	st := r.loadState()
 	ir, policy := buildIRWithPolicy(goal, input, st)
+	usefulIR := hasUsefulIR(ir)
+	traceIR := ir
+	if !usefulIR {
+		traceIR = PlannerIR{
+			Version:     ir.Version,
+			Goal:        ir.Goal,
+			SourceEvent: ir.SourceEvent,
+			RuntimeMode: ir.RuntimeMode,
+		}
+	}
 	now := time.Now().UTC()
 	id := traceID(now)
 	hardening := r.hardeningTraceForStart(ctx, ir, input, st, now, id)
 	t := &Turn{
 		rt:        r,
-		ir:        ir,
-		citations: memoryCitationsForIR(ir),
-		metrics:   turnMetricsForIR(ir, st),
+		ir:        traceIR,
+		citations: memoryCitationsForIR(traceIR),
+		metrics:   turnMetricsForIR(traceIR, st),
 		trace: ExecutionTrace{
 			ID:                  id,
 			IRVersion:           version,
 			Goal:                goal,
-			Steps:               ir.ExecutionSteps,
-			MemoryUsed:          memoryRefIDs(ir.MemoryReferences),
-			DecisionBranches:    decisionBranches(ir),
+			Steps:               traceIR.ExecutionSteps,
+			MemoryUsed:          memoryRefIDs(traceIR.MemoryReferences),
+			DecisionBranches:    decisionBranches(traceIR),
 			StartedAt:           now,
 			SemanticShift:       append([]string(nil), policy.SemanticShift...),
 			ControlMode:         policy.Mode,
@@ -521,12 +531,12 @@ func (r *Runtime) StartTurn(ctx context.Context, input string, _ []provider.Mess
 			},
 		},
 	}
-	if ir.StrategySelection != nil {
-		t.strategy = ir.StrategySelection.Selected
+	if traceIR.StrategySelection != nil {
+		t.strategy = traceIR.StrategySelection.Selected
 		t.trace.StrategyUsed = []string{t.strategy}
 	}
-	t.trace.CausalEdges = causalEdgesForIR(t.trace.ID, ir)
-	if !hasUsefulIR(ir) {
+	t.trace.CausalEdges = causalEdgesForIR(t.trace.ID, traceIR)
+	if !usefulIR {
 		return "", t
 	}
 	// Production hardening is an observability signal recorded on the trace; it
@@ -1744,7 +1754,7 @@ func strategyScoreWithReason(goal string, s Strategy) (float64, string) {
 	lowerGoal := strings.ToLower(goal)
 	for _, p := range s.Preconditions {
 		p = strings.ToLower(strings.TrimSpace(p))
-		if p != "" && strings.Contains(lowerGoal, p) {
+		if preconditionMatches(lowerGoal, p) {
 			score += 0.75
 			reasons = append(reasons, "matched precondition "+p)
 		}
@@ -1758,6 +1768,44 @@ func strategyScoreWithReason(goal string, s Strategy) (float64, string) {
 		reasons = append(reasons, "low success history")
 	}
 	return score, strings.Join(reasons, "; ")
+}
+
+func preconditionMatches(lowerGoal, precondition string) bool {
+	precondition = strings.ToLower(strings.TrimSpace(precondition))
+	if precondition == "" {
+		return false
+	}
+	if !isASCIIWord(precondition) {
+		return strings.Contains(lowerGoal, precondition)
+	}
+	start := 0
+	for {
+		idx := strings.Index(lowerGoal[start:], precondition)
+		if idx < 0 {
+			return false
+		}
+		idx += start
+		before := idx == 0 || !isASCIIWordByte(lowerGoal[idx-1])
+		afterIdx := idx + len(precondition)
+		after := afterIdx >= len(lowerGoal) || !isASCIIWordByte(lowerGoal[afterIdx])
+		if before && after {
+			return true
+		}
+		start = idx + 1
+	}
+}
+
+func isASCIIWord(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if !isASCIIWordByte(s[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func isASCIIWordByte(b byte) bool {
+	return b == '_' || (b >= '0' && b <= '9') || (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z')
 }
 
 func normalizedOutcomeScore(s Strategy) (float64, string) {
@@ -3291,6 +3339,26 @@ func ensureBuiltInStrategies(strategies []Strategy) []Strategy {
 func builtInStrategies() []Strategy {
 	return []Strategy{
 		{
+			ID:          "univer-sac-workflow",
+			Description: "Use the installed Univer skill and public univer CLI/SaC surfaces for .univer target operations.",
+			Preconditions: []string{
+				".univer",
+				"univer",
+				"univer-cli",
+				"sac",
+				"workbook",
+				"spreadsheet",
+				"sheet",
+				"工作簿",
+				"表格",
+			},
+			ExecutionPlan: []Step{
+				{ID: "load-univer-skill", Action: "Use the installed Univer/univer-cli skill before generic repository exploration."},
+				{ID: "inspect-univer-target", Action: "Inspect the explicit .univer target with public univer status and managed inspect commands."},
+				{ID: "author-through-sac", Action: "For durable changes, materialize SaC, create or update migration source, apply, then verify or read back target-visible evidence."},
+			},
+		},
+		{
 			ID:            "code-review",
 			Description:   "Inspect the real execution path, prioritize bugs and regressions, then verify with focused checks.",
 			Preconditions: []string{"review", "pr", "diff"},
@@ -3345,17 +3413,47 @@ func builtInStrategies() []Strategy {
 func classifyStrategy(goal string) string {
 	lower := strings.ToLower(goal)
 	switch {
-	case strings.Contains(lower, "review") || strings.Contains(goal, "评审"):
+	case isUniverWorkflowGoal(goal):
+		return "univer-sac-workflow"
+	case goalHasAnyPrecondition(lower, "review", "pr", "diff") || strings.Contains(goal, "评审"):
 		return "code-review"
-	case strings.Contains(lower, "bug") || strings.Contains(lower, "fix") || strings.Contains(goal, "修复"):
+	case goalHasAnyPrecondition(lower, "bug", "fix", "error") || strings.Contains(goal, "修复"):
 		return "bugfix-reproduce-first"
-	case strings.Contains(lower, "frontend") || strings.Contains(lower, "ui") || strings.Contains(goal, "前端"):
+	case goalHasAnyPrecondition(lower, "frontend", "ui", "desktop") || strings.Contains(goal, "前端"):
 		return "frontend-visual-verify"
-	case strings.Contains(lower, "goal") || strings.Contains(lower, "research") || strings.Contains(goal, "持续"):
+	case goalHasAnyPrecondition(lower, "goal", "research") || strings.Contains(goal, "持续"):
 		return "long-horizon-autoresearch"
 	default:
 		return "general"
 	}
+}
+
+func goalHasAnyPrecondition(lowerGoal string, markers ...string) bool {
+	for _, marker := range markers {
+		if preconditionMatches(lowerGoal, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func isUniverWorkflowGoal(goal string) bool {
+	lower := strings.ToLower(goal)
+	for _, marker := range []string{
+		".univer",
+		"univer-cli",
+		"sac",
+		"workbook",
+		"spreadsheet",
+		"sheet",
+		"工作簿",
+		"表格",
+	} {
+		if preconditionMatches(lower, marker) {
+			return true
+		}
+	}
+	return false
 }
 
 func summarizeGoal(input string) string {

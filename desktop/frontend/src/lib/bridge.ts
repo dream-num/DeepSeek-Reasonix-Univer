@@ -60,6 +60,7 @@ import type {
   TabMeta,
   TopicMeta,
   ToolApprovalMode,
+  UniverPreviewResult,
   UpdateDownloadResult,
   UpdateInfo,
   UpdateProgress,
@@ -203,6 +204,7 @@ export interface AppBindings {
   ListDir(rel: string): Promise<DirEntry[]>;
   SearchFileRefs(query: string): Promise<DirEntry[]>;
   ReadFile(rel: string): Promise<FilePreview>;
+  LiveUniverPreview(rel: string): Promise<UniverPreviewResult>;
   WorkspaceChanges(tabID: string): Promise<WorkspaceChangesView>;
   GitBranches(): Promise<string[]>;
   GitCheckout(branch: string): Promise<void>;
@@ -2195,6 +2197,16 @@ function makeMockApp(): AppBindings {
         size: samples[rel]?.length ?? 42,
         truncated: false,
         binary: false,
+      };
+    },
+    async LiveUniverPreview(rel: string) {
+      if (!rel.toLowerCase().endsWith(".univer")) {
+        return { ok: false, error: "selected file is not a .univer file" };
+      }
+      return {
+        ok: true,
+        url: `http://127.0.0.1:5173/?file=${encodeURIComponent(rel)}`,
+        managed: false,
       };
     },
     async WorkspaceChanges(_tabID: string) {

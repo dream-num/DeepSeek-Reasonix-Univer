@@ -967,8 +967,12 @@ func TestBuildDiscoversSkills(t *testing.T) {
 	dir := robustTempDir(t)
 	home := robustTempDir(t)
 	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("REASONIX_HOME", filepath.Join(home, ".reasonix"))
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
+	t.Setenv("AppData", filepath.Join(home, "AppData"))
 	t.Chdir(dir)
+	writeFile(t, dir, ".agents/skills/univer-cli/SKILL.md", "---\ndescription: Univer CLI skill\n---\nUse SaC")
 	writeFile(t, dir, "reasonix.toml", `
 default_model = "test-model"
 
@@ -984,30 +988,33 @@ api_key_env = "REASONIX_TEST_KEY_UNSET"
 `)
 	writeFile(t, dir, ".reasonix/skills/projskill.md", "---\ndescription: a project skill\n---\nplaybook")
 
-	ctrl, err := Build(context.Background(), Options{})
+	ctrl, err := Build(context.Background(), Options{WorkspaceRoot: dir})
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
 	defer ctrl.Close()
 
 	var hasProj, hasBuiltin bool
+	var hasAgents bool
 	for _, s := range ctrl.Skills() {
 		switch s.Name {
 		case "projskill":
 			hasProj = true
+		case "univer-cli":
+			hasAgents = true
 		case "explore":
 			hasBuiltin = true
 		}
 	}
-	if !hasProj || !hasBuiltin {
-		t.Fatalf("Skills() should include the project skill and a built-in; got %v", ctrl.Skills())
+	if !hasProj || !hasAgents || !hasBuiltin {
+		t.Fatalf("Skills() should include the project skill, agents skill, and a built-in; got %v", ctrl.Skills())
 	}
 
 	sys := systemMessage(ctrl.History())
 	if !strings.Contains(sys, "# Skills") {
 		t.Fatalf("skills index missing from system prompt:\n%s", sys)
 	}
-	if !strings.Contains(sys, "projskill") || !strings.Contains(sys, "explore") {
+	if !strings.Contains(sys, "projskill") || !strings.Contains(sys, "univer-cli") || !strings.Contains(sys, "explore") {
 		t.Fatalf("skill names missing from index:\n%s", sys)
 	}
 }
@@ -1953,6 +1960,42 @@ api_key_env = "REASONIX_TEST_KEY_UNSET"
 	}
 }
 
+func TestBuildAppendsUniverTargetPolicyToCustomSystemPrompt(t *testing.T) {
+	dir := robustTempDir(t)
+	t.Chdir(dir)
+	writeFile(t, dir, "reasonix.toml", `
+default_model = "test-model"
+
+[agent]
+system_prompt = "BASE"
+
+[[providers]]
+name = "test-model"
+kind = "openai"
+base_url = "https://example.invalid"
+model = "x"
+api_key_env = "REASONIX_TEST_KEY_UNSET"
+`)
+
+	ctrl, err := Build(context.Background(), Options{})
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	defer ctrl.Close()
+
+	sys := systemMessage(ctrl.History())
+	for _, want := range []string{
+		"Univerfile targets",
+		"univer-cli skill",
+		"sac materialize",
+		"Do not treat a .univer target as a source-code directory or binary blob",
+	} {
+		if !strings.Contains(sys, want) {
+			t.Fatalf("Univer target policy missing %q from custom system prompt:\n%s", want, sys)
+		}
+	}
+}
+
 func systemMessage(msgs []provider.Message) string {
 	for _, m := range msgs {
 		if m.Role == provider.RoleSystem {
@@ -1966,6 +2009,7 @@ func stripLanguagePolicy(s string) string {
 	s = strings.TrimSpace(s)
 	for _, policy := range []string{
 		config.LanguagePolicy,
+		config.UniverTargetPolicy,
 		config.UserDecisionPolicy,
 	} {
 		s = strings.TrimSpace(strings.TrimSuffix(s, policy))

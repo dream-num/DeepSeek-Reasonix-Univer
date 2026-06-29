@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-06-25
+goal: Reasonix Desktop can show a live Univerfile preview after agent or user
+  activity selects a .univer file.

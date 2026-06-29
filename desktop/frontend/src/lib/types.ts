@@ -512,6 +512,15 @@ export interface FilePreview {
   err?: string;
 }
 
+export interface UniverPreviewResult {
+  ok: boolean;
+  url?: string;
+  gatewayUrl?: string;
+  pid?: number;
+  managed?: boolean;
+  error?: string;
+}
+
 export interface WorkspaceChangeView {
   path: string;
   oldPath?: string;

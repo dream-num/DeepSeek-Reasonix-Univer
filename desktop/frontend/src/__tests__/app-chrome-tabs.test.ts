@@ -181,7 +181,7 @@ ok(
 
 ok(
   /const controllerReady = state\.meta\?\.ready === true && !state\.backendActivationPending;/.test(appSource) &&
-    /if \(!controllerReady\) return;\s*void commitThenSend\(text\);/s.test(appSource) &&
+    /if \(!controllerReady\) return;\s*void commitThenSend\(text\)(?:\.catch\([\s\S]*?\))?;/s.test(appSource) &&
     /onPrompt=\{handleTranscriptPrompt\}/.test(appSource) &&
     /submitDisabled=\{!controllerReady\}/.test(appSource),
   "welcome prompts and composer submit share the controller readiness gate",

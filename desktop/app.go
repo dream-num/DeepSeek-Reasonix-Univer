@@ -146,6 +146,9 @@ type App struct {
 	skillRootsCache skillRootsCache
 
 	heartbeat *HeartbeatEngine // scheduled heartbeat tasks; nil until startup
+
+	univerPreviewMu sync.Mutex
+	univerPreview   *univerPreviewManager
 }
 
 type skillRootsCache struct {
@@ -576,6 +579,7 @@ func (a *App) shutdown(context.Context) {
 	if a.heartbeat != nil {
 		a.heartbeat.Stop()
 	}
+	a.closeUniverPreviewSidecars()
 	a.stopBotRuntime()
 	a.stopTray()
 	// Save window geometry synchronously from Go so it's persisted even if the

@@ -73,6 +73,10 @@ eq(finalDeclaration(".workspace-preview__body--code .code-block", "display"), "f
 eq(finalDeclaration(".workspace-preview__body--code .code", "overflow"), "auto", "code viewport owns horizontal and vertical scrolling");
 eq(finalDeclaration(".workspace-preview__body--code .code", "min-height"), "0", "code viewport can shrink inside the preview pane");
 eq(finalDeclaration(".workspace-preview__body--code .code", "margin"), "0", "code viewport scrollbar sits at the visible pane bottom");
+eq(finalDeclaration(".workspace-preview__body--univer", "overflow"), "hidden", "Univer preview hosts the iframe without an outer scroller");
+eq(finalDeclaration(".workspace-preview__body--univer", "padding"), "0", "Univer preview does not inherit file preview padding");
+eq(finalDeclaration(".workspace-univer-preview__frame", "border"), "0", "Univer preview iframe is unframed");
+eq(finalDeclaration(".workspace-univer-preview__frame", "min-height"), "0", "Univer preview iframe can shrink inside the dock");
 eq(
   finalDeclaration(".workspace-panel--with-tree-rail:not(.workspace-panel--tree-hidden)", "grid-template-columns"),
   "var(--workspace-tree-rail-width) var(--workspace-tree-width) minmax(var(--workspace-preview-min-width), 1fr)",

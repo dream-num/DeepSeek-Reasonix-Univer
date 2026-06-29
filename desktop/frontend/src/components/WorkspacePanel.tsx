@@ -39,7 +39,7 @@ import { createRafResizeUpdater } from "../lib/resizeDrag";
 import { closeWorkspacePreviewTab } from "../lib/workspacePreviewTabs";
 import { shouldScrollWorkspaceTreeSelection } from "../lib/workspaceTreeReveal";
 import { mergeWorkspaceSearchResults } from "../lib/workspaceTreeSearch";
-import type { DirEntry, FilePreview, GitCommitView, GitCommitDetailView, WorkspaceChangesView } from "../lib/types";
+import type { DirEntry, FilePreview, GitCommitView, GitCommitDetailView, UniverPreviewResult, WorkspaceChangesView } from "../lib/types";
 import { formatWorkspaceReference, WORKSPACE_REF_DRAG_TYPE } from "../lib/workspaceDrag";
 import { cleanGitDiff } from "../lib/diff";
 import { CodeViewer } from "./CodeViewer";
@@ -123,6 +123,10 @@ function languageFor(path: string): string | undefined {
     yml: "yaml",
   };
   return byExt[ext];
+}
+
+function isUniverPath(path?: string | null): boolean {
+  return path?.toLowerCase().endsWith(".univer") ?? false;
 }
 
 function renderMediaPreview(preview: FilePreview): ReactElement | null {
@@ -209,6 +213,7 @@ export function WorkspacePanel({
   refreshKey,
   initialViewMode = "files",
   revealPathRequest,
+  agentPreviewPathRequest,
   changeRevealRequest,
   fileListRequest,
   changeListRequest,
@@ -227,6 +232,7 @@ export function WorkspacePanel({
   refreshKey?: number;
   initialViewMode?: "files" | "changed";
   revealPathRequest?: WorkspaceRevealRequest | null;
+  agentPreviewPathRequest?: WorkspaceRevealRequest | null;
   changeRevealRequest?: WorkspaceRevealRequest | null;
   fileListRequest?: WorkspaceFileListRequest | null;
   changeListRequest?: WorkspaceChangeListRequest | null;
@@ -242,6 +248,8 @@ export function WorkspacePanel({
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [openTabs, setOpenTabs] = useState<string[]>([]);
   const [preview, setPreview] = useState<FilePreview | null>(null);
+  const [univerPreview, setUniverPreview] = useState<UniverPreviewResult | null>(null);
+  const [explicitUniverTarget, setExplicitUniverTarget] = useState<string | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [viewMode, setViewMode] = useState<"files" | "changed">(initialViewMode);
   const [gitHistory, setGitHistory] = useState<GitCommitView[]>([]);
@@ -265,6 +273,7 @@ export function WorkspacePanel({
   const lastPreviewModeActiveRef = useRef<boolean | null>(null);
   const lastRevealRequestIdRef = useRef<number | null>(null);
   const dismissedRevealRequestIdRef = useRef<number | null>(null);
+  const lastAgentPreviewRequestIdRef = useRef<number | null>(null);
   const lastChangeRevealRequestIdRef = useRef<number | null>(null);
   const dismissedChangeRevealRequestIdRef = useRef<number | null>(null);
   const lastFileListRequestIdRef = useRef<number | null>(null);
@@ -370,7 +379,8 @@ export function WorkspacePanel({
   }, [expandedCommit, selectedPath, open, tabId]);
 
   const selectFile = useCallback(
-    (path: string) => {
+    (path: string, options?: { explicit?: boolean }) => {
+      const explicit = options?.explicit !== false;
       const initializeSplit = shouldInitializeWorkspaceSplitOnFileSelect({
         previewVisible: openTabs.length > 0 || selectedPath !== null,
         treeVisible,
@@ -387,6 +397,11 @@ export function WorkspacePanel({
       }
       pendingTreeRevealPathRef.current = path;
       setSelectedPath(path);
+      if (explicit) {
+        setExplicitUniverTarget(isUniverPath(path) ? path : null);
+      }
+      setPreview(null);
+      setUniverPreview(null);
       setScopedFilePaths((current) => {
         if (current) dismissedFileListRequestIdRef.current = lastFileListRequestIdRef.current;
         return null;
@@ -411,8 +426,10 @@ export function WorkspacePanel({
     setEntriesByDir({});
     setOpenDirs(new Set([""]));
     setSelectedPath(null);
+    setExplicitUniverTarget(null);
     setOpenTabs([]);
     setPreview(null);
+    setUniverPreview(null);
     setGitHistory([]);
     setExpandedCommit(null);
     setCommitDetail(null);
@@ -444,8 +461,10 @@ export function WorkspacePanel({
     dismissedChangeListRequestIdRef.current = null;
     if (viewMode === "changed") {
       setSelectedPath(null);
+      setExplicitUniverTarget(null);
       setOpenTabs([]);
       setPreview(null);
+      setUniverPreview(null);
     }
   }, [open, tabId]);
 
@@ -460,8 +479,10 @@ export function WorkspacePanel({
     if (initialViewMode === "changed") {
       setScopedFilePaths(null);
       setSelectedPath(null);
+      setExplicitUniverTarget(null);
       setOpenTabs([]);
       setPreview(null);
+      setUniverPreview(null);
       return;
     }
     setScopedChangeRows(null);
@@ -494,8 +515,10 @@ export function WorkspacePanel({
     setTreeVisible(true);
     setScopedFilePaths(paths);
     setSelectedPath(null);
+    setExplicitUniverTarget(null);
     setOpenTabs([]);
     setPreview(null);
+    setUniverPreview(null);
     setFilter("");
     setExpandedCommit(null);
     setCommitDetail(null);
@@ -536,8 +559,10 @@ export function WorkspacePanel({
     setScopedChangeRows(changes);
     setScopedFilePaths(null);
     setSelectedPath(null);
+    setExplicitUniverTarget(null);
     setOpenTabs([]);
     setPreview(null);
+    setUniverPreview(null);
     setFilter("");
     setExpandedCommit(null);
     setCommitDetail(null);
@@ -574,6 +599,40 @@ export function WorkspacePanel({
   }, [open, revealPathRequest, selectFile, selectedPath, viewMode]);
 
   useEffect(() => {
+    if (!open || agentPreviewPathRequest) return;
+    lastAgentPreviewRequestIdRef.current = null;
+  }, [agentPreviewPathRequest, open]);
+
+  useEffect(() => {
+    if (!open || !agentPreviewPathRequest) return;
+    const path = agentPreviewPathRequest.path.trim();
+    if (!isUniverPath(path)) return;
+    if (lastAgentPreviewRequestIdRef.current === agentPreviewPathRequest.id && selectedPath === path) return;
+    if (explicitUniverTarget && explicitUniverTarget !== path) return;
+    lastAgentPreviewRequestIdRef.current = agentPreviewPathRequest.id;
+    if (selectedPath === path) {
+      setViewMode("files");
+      setTreeVisible(true);
+      setScopedFilePaths(null);
+      setScopedChangeRows(null);
+      setExpandedCommit(null);
+      setCommitDetail(null);
+      setSelectionMenu(null);
+      setTreeMenu(null);
+      return;
+    }
+    setViewMode("files");
+    setTreeVisible(true);
+    setScopedFilePaths(null);
+    setScopedChangeRows(null);
+    setExpandedCommit(null);
+    setCommitDetail(null);
+    setSelectionMenu(null);
+    setTreeMenu(null);
+    selectFile(path, { explicit: false });
+  }, [agentPreviewPathRequest, explicitUniverTarget, open, selectFile, selectedPath]);
+
+  useEffect(() => {
     if (!open || changeRevealRequest) return;
     lastChangeRevealRequestIdRef.current = null;
     dismissedChangeRevealRequestIdRef.current = null;
@@ -595,8 +654,10 @@ export function WorkspacePanel({
     setScopedFilePaths(null);
     setScopedChangeRows(null);
     setSelectedPath(changeRevealRequest.path);
+    setExplicitUniverTarget(isUniverPath(changeRevealRequest.path) ? changeRevealRequest.path : null);
     setOpenTabs([]);
     setPreview(null);
+    setUniverPreview(null);
     setFilter("");
     setExpandedCommit(null);
     setCommitDetail(null);
@@ -616,6 +677,8 @@ export function WorkspacePanel({
     if (!open || !refreshKey) return;
     if (viewMode === "changed") {
       void loadGitHistory();
+      void loadWorkspaceChanges();
+    } else {
       void loadWorkspaceChanges();
     }
     openDirsRef.current.forEach((dir) => void loadDir(dir));
@@ -658,26 +721,48 @@ export function WorkspacePanel({
     if (!selectedPath) return;
     let live = true;
     setLoadingPreview(true);
-    app
-      .ReadFile(selectedPath)
-      .then((next) => {
-        if (live) setPreview(next);
-      })
-      .catch((err) => {
-        if (live) {
-          setPreview({
-            path: selectedPath,
-            body: "",
-            size: 0,
-            truncated: false,
-            binary: false,
-            err: String(err?.message ?? err),
-          });
-        }
-      })
-      .finally(() => {
-        if (live) setLoadingPreview(false);
-      });
+    if (isUniverPath(selectedPath)) {
+      setPreview(null);
+      setUniverPreview(null);
+      app
+        .LiveUniverPreview(selectedPath)
+        .then((next) => {
+          if (live) setUniverPreview(next);
+        })
+        .catch((err) => {
+          if (live) {
+            setUniverPreview({
+              ok: false,
+              error: String(err?.message ?? err),
+            });
+          }
+        })
+        .finally(() => {
+          if (live) setLoadingPreview(false);
+        });
+    } else {
+      setUniverPreview(null);
+      app
+        .ReadFile(selectedPath)
+        .then((next) => {
+          if (live) setPreview(next);
+        })
+        .catch((err) => {
+          if (live) {
+            setPreview({
+              path: selectedPath,
+              body: "",
+              size: 0,
+              truncated: false,
+              binary: false,
+              err: String(err?.message ?? err),
+            });
+          }
+        })
+        .finally(() => {
+          if (live) setLoadingPreview(false);
+        });
+    }
     return () => {
       live = false;
     };
@@ -712,11 +797,16 @@ export function WorkspacePanel({
     () => workspaceChanges?.files.filter((c) => c.sources.includes("session")) ?? null,
     [workspaceChanges],
   );
+  const sessionUniverPreviewPath = useMemo(() => {
+    const paths = new Set((sessionChanges ?? []).map((change) => change.path).filter(isUniverPath));
+    return paths.size === 1 ? Array.from(paths)[0] : null;
+  }, [sessionChanges]);
   const workspaceGitWarning = workspaceChanges && (!workspaceChanges.gitAvailable || workspaceChanges.gitErr?.trim())
     ? t("workspace.gitUnavailable")
     : null;
 
   const changedMode = viewMode === "changed";
+  const selectedIsUniver = isUniverPath(selectedPath);
   const currentFileName = selectedPath ? basename(selectedPath) : t("workspace.noFile");
   const currentFileDir = selectedPath ? parentPath(selectedPath) : "";
   const previewTitle = changedMode && !selectedPath
@@ -726,6 +816,21 @@ export function WorkspacePanel({
     ? scopedChangeRows ? t("context.changedMeta", { count: scopedChangeRows.length }) : shortCwd(cwd) || t("workspace.title")
     : currentFileDir;
   const recentFiles = useMemo(() => [...openTabs].reverse(), [openTabs]);
+
+  useEffect(() => {
+    if (!open || !sessionUniverPreviewPath) return;
+    if (explicitUniverTarget && explicitUniverTarget !== sessionUniverPreviewPath) return;
+    if (selectedPath === sessionUniverPreviewPath) return;
+    setViewMode("files");
+    setTreeVisible(true);
+    setScopedFilePaths(null);
+    setScopedChangeRows(null);
+    setExpandedCommit(null);
+    setCommitDetail(null);
+    setSelectionMenu(null);
+    setTreeMenu(null);
+    selectFile(sessionUniverPreviewPath, { explicit: false });
+  }, [explicitUniverTarget, open, selectFile, selectedPath, sessionUniverPreviewPath]);
 
   useEffect(() => {
     const q = filter.trim();
@@ -910,8 +1015,10 @@ export function WorkspacePanel({
     }
     const nextPreviewTabs = closeWorkspacePreviewTab(openTabs, selectedPath);
     setSelectedPath(nextPreviewTabs.selectedPath);
+    setExplicitUniverTarget(isUniverPath(nextPreviewTabs.selectedPath) ? nextPreviewTabs.selectedPath : null);
     setOpenTabs(nextPreviewTabs.openTabs);
     setPreview(null);
+    setUniverPreview(null);
     setSelectionMenu(null);
     setTreeMenu(null);
     setRecentOpen(false);
@@ -1004,7 +1111,7 @@ export function WorkspacePanel({
   };
 
   const openSelectionMenu = (event: ReactMouseEvent<HTMLDivElement>) => {
-    if (!selectedPath || loadingPreview || preview?.err || preview?.binary || preview?.kind) return;
+    if (!selectedPath || selectedIsUniver || loadingPreview || preview?.err || preview?.binary || preview?.kind) return;
     const text = selectedTextFromPreview();
     if (text.trim() === "") return;
     event.preventDefault();
@@ -1087,6 +1194,7 @@ export function WorkspacePanel({
           } else {
             if (selectedPath === path) {
               setSelectedPath(null);
+              setExplicitUniverTarget(null);
             } else {
               selectFile(path);
             }
@@ -1133,6 +1241,7 @@ export function WorkspacePanel({
           } else {
             if (selectedPath === path) {
               setSelectedPath(null);
+              setExplicitUniverTarget(null);
             } else {
               selectFile(path);
             }
@@ -1156,6 +1265,7 @@ export function WorkspacePanel({
   const isMarkdown = selectedPath?.toLowerCase().endsWith(".md") ?? false;
   const codePreviewActive = Boolean(
     selectedPath &&
+      !selectedIsUniver &&
       !changedMode &&
       preview &&
       !loadingPreview &&
@@ -1239,7 +1349,7 @@ export function WorkspacePanel({
                   type="button"
                   className={`workspace-recent-menu__item${path === selectedPath ? " workspace-recent-menu__item--active" : ""}`}
                   onClick={() => {
-                    setSelectedPath(path);
+                    selectFile(path);
                     setRecentOpen(false);
                   }}
                 >
@@ -1294,7 +1404,7 @@ export function WorkspacePanel({
         </div>
 
         <div
-          className={`workspace-preview__body${codePreviewActive ? " workspace-preview__body--code" : ""}`}
+          className={`workspace-preview__body${codePreviewActive ? " workspace-preview__body--code" : ""}${selectedIsUniver && !changedMode ? " workspace-preview__body--univer" : ""}`}
           ref={previewBodyRef}
           onContextMenu={openSelectionMenu}
         >
@@ -1311,6 +1421,7 @@ export function WorkspacePanel({
                       dismissedChangeListRequestIdRef.current = lastChangeListRequestIdRef.current;
                       setScopedChangeRows(null);
                       setSelectedPath(null);
+                      setExplicitUniverTarget(null);
                       setExpandedCommit(null);
                       setCommitDetail(null);
                       void loadGitHistory();
@@ -1483,6 +1594,33 @@ export function WorkspacePanel({
             <div className="workspace-empty">{t("workspace.pickFile")}</div>
           ) : loadingPreview ? (
             <div className="workspace-empty">{t("workspace.loading")}</div>
+          ) : selectedIsUniver ? (
+            univerPreview?.ok && univerPreview.url ? (
+              <div className="workspace-univer-preview">
+                <iframe
+                  className="workspace-univer-preview__frame"
+                  src={univerPreview.url}
+                  title={`${t("workspace.univerPreviewTitle")}: ${basename(selectedPath)}`}
+                  onError={() => setUniverPreview({ ok: false, error: t("workspace.univerPreviewUnavailable") })}
+                />
+              </div>
+            ) : (
+              <div className="workspace-univer-preview__failure" role="status">
+                <div className="workspace-empty workspace-empty--error">
+                  {univerPreview?.error || t("workspace.univerPreviewUnavailable")}
+                </div>
+                <button
+                  className="workspace-univer-preview__retry"
+                  type="button"
+                  onClick={() => {
+                    void refreshSelected();
+                  }}
+                >
+                  <RefreshCw size={13} />
+                  <span>{t("workspace.univerPreviewRetry")}</span>
+                </button>
+              </div>
+            )
           ) : preview?.err ? (
             <div className="workspace-empty workspace-empty--error">{preview.err}</div>
           ) : preview?.kind ? (
